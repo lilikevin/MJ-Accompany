@@ -2771,9 +2771,146 @@ function uEntry(){let h='<section class="u-flow"><p class="u-caption">'+WIND[S.w
 function bestMelds(){if(!E.uGroups?.length)return base_bestMelds();const c=E.marks.slice(),kept=[];for(const g of E.uGroups){const ts=g.t==='chow'?[g.tile,g.tile+1,g.tile+2]:Array(g.t==='kong'?4:3).fill(g.tile),need=Array(34).fill(0);ts.forEach(t=>need[t]++);if(need.every((n,t)=>c[t]>=n)){ts.forEach(t=>c[t]--);kept.push(g);}}E.uGroups=kept;const rest=partitions(c);E.partBad=!rest.length;return rest.length?kept.map(g=>({t:g.t,tile:g.tile,open:g.t==='kong'?E.kongOpen[g.tile]!==false:true})).concat(toMelds(rest[0])):[];}
 function editorPoolHtml(){const entries=physicalEntries(),used={},labels={};let eaten=false;const win=editorWin(),lock=pending[0]?.ron?.winTile,readonly=['flowers','flags'].includes(E.mode);E.melds.forEach((g,i)=>(g.t==='chow'?[g.tile,g.tile+1,g.tile+2]:Array(g.t==='kong'?4:3).fill(g.tile)).forEach(t=>(labels[t]||(labels[t]=[])).push({i,n:g.t==='chow'?'上':g.t==='pung'?'碰':g.open===false?'暗槓':'明槓'})));
  const html=entries.map(({t,group})=>{const j=used[t]||0;used[t]=j+1;let m=group==null?(labels[t]||[])[j]:{i:group,n:E.wildGroups[group].t==='chow'?'上':E.wildGroups[group].t==='pung'?'碰':E.wildGroups[group].open===false?'暗槓':'明槓'};if(isHK()&&['open','closed'].includes(E.hkKongs[t]))m={i:t,n:E.hkKongs[t]==='closed'?'暗槓':'明槓'};const selected=!m&&!eaten&&t===win;if(selected)eaten=true;const disabled=readonly||(E.mode==='win'&&(!!m||(lock!=null&&t!==lock)||(t===34&&!E.self))),a=E.mode==='meld'&&m?(group!=null?'wildRemoveGroup':isHK()?'uiHKKong':'rmMeld'):group!=null?'wildRemoveGroup':'poolTap';return mt(t,{tag:'button',badge:m?m.n:selected?'食':'',cls:(m?'mk2 ':'')+(selected?'mark ':'')+(t===overTile?'overbox ':'')+(lock!=null&&t===lock&&!m?'lockhi':''),attrs:'data-act="'+a+'" data-t="'+t+'" data-i="'+(m?.i||group||0)+'"'+(disabled?' disabled':'')});}).join('');return '<div class="editor-pile"><div class="editor-grid">'+html+Array(Math.max(0,editorCapacity(entries.length)-entries.length)).fill('<span class="tile-slot"></span>').join('')+'</div></div>';}
-function editorHtml(){const i=Math.max(0,['pick','meld','win','flowers','flags'].indexOf(E.mode==='jmeld'?'meld':E.mode)),steps=[['pick','選牌'],['meld',isHK()?'槓／門清':'明牌'],['win','食糊'],['flowers','花牌'],['flags','特殊']];let content=editorPanelHtml();if(i===4){const R=RL(),list=(M.FLAGS||DEFAULT_FLAGS).filter(x=>!(isHK()&&x[0]==='menqing')).concat(isHK()||curPreset()===4?[]:HUAHU.map(h=>[h[0],h[1]])).sort((a,b)=>(R[a[0]]?.fan||0)-(R[b[0]]?.fan||0)),n=Math.max(1,Math.ceil(list.length/4));uiFlagPage=Math.min(uiFlagPage,n-1);content='<div class="grid2 u-flags">'+list.slice(uiFlagPage*4,uiFlagPage*4+4).map(([id,n])=>'<label><input type="checkbox" data-chg="flag" data-k="'+id+'"'+(E.flags[id]?' checked':'')+'>'+esc(n)+' <small>'+(R[id]?.fan||0)+'</small></label>').join('')+'</div>'+uPagerSlot(uiFlagPage,n,'uiFlagPage');}
- return '<div class="editor-screen u-editor"><header class="editor-head">'+ub('‹','editorBack')+'<span>'+playerLabel(E.winner)+' '+(E.self?'自摸':'食 '+nm(E.disc))+'</span>'+ub('☰','uiNav','aria-label="切換畫面"')+'</header><div class="u-steps">'+steps.map(([v,n],j)=>ub((j<i?'✓ ':j+1+' ')+n,'mode','data-v="'+v+'"',j===i?'current':'')).join('')+'</div><div class="u-instruction">第'+(i+1)+'步 · '+esc(editorHint())+'</div><main class="editor-main"><div class="editor-stats">共'+physicalEntries().length+'張</div>'+(editorWin()==null&&i<2?'<div class="editor-live idle">待選食糊牌後計番</div>':liveTotalHtml())+editorPoolHtml()+(i===0?'<div class="editor-tools">'+ub('退一張','undoTile')+ub('清空','clearHand')+(isHK()&&!pending.length?ub('快速記番','quickStart'):'')+'</div>':'')+'<div class="editor-panel">'+content+'</div></main><footer class="editor-footer"><div class="editor-finish">'+ub(i?'上一步':'返回','uiPrev')+ub(i===4?'確認番數':'下一步','uiNext','','primary')+'</div></footer></div>';}
-function fitEditor(){const b=document.querySelector('.editor-screen');if(!b)return;const vv=window.visualViewport,h=vv?.height||innerHeight,w=vv?.width||innerWidth,compact=h<720,cols=editorColumns(physicalEntries().length);b.style.setProperty('--editor-height',h+'px');b.style.top=(vv?.offsetTop||0)+'px';b.classList.toggle('editor-compact',compact);const measure=k=>b.querySelector(k)?.getBoundingClientRect().height||0,fixed=measure('.editor-head')+measure('.u-steps')+measure('.u-instruction')+measure('.editor-footer'),reserve=E.mode==='pick'?(compact?320:340):(compact?220:240),cell=Math.floor((Math.max(102,h-fixed-reserve)-12)/3),tw=Math.max(24,Math.min(56,Math.floor((Math.min(650,w-32)-(cols-1)*6)/cols),Math.floor(cell*.74))),th=Math.round(tw/.74);b.style.setProperty('--pile-frame-h',(th*3+12)+'px');b.style.setProperty('--pile-cols',cols);b.style.setProperty('--tile-w',tw+'px');b.style.setProperty('--tile-h',th+'px');b.style.setProperty('--face-size',Math.max(16,Math.min(26,tw*.48))+'px');b.style.setProperty('--suit-size',Math.max(10,tw*.23)+'px');}
+function editorHtml() {
+  const requiredTiles = isHK() ? 14 : 17;
+  const currentTiles = physicalEntries().length;
+
+  const i = Math.max(
+    0,
+    ['pick', 'meld', 'win', 'flowers', 'flags'].indexOf(
+      E.mode === 'jmeld' ? 'meld' : E.mode
+    )
+  );
+
+  const steps = [
+    ['pick', '選牌'],
+    ['meld', isHK() ? '槓／門清' : '明牌'],
+    ['win', '食糊'],
+    ['flowers', '花牌'],
+    ['flags', '特殊']
+  ];
+
+  let content = editorPanelHtml();
+
+  if (i === 4) {
+    const R = RL();
+
+    const list = (M.FLAGS || DEFAULT_FLAGS)
+      .filter(x => !(isHK() && x[0] === 'menqing'))
+      .concat(
+        isHK() || curPreset() === 4
+          ? []
+          : HUAHU.map(h => [h[0], h[1]])
+      )
+      .sort(
+        (a, b) =>
+          (R[a[0]]?.fan || 0) - (R[b[0]]?.fan || 0)
+      );
+
+    const n = Math.max(1, Math.ceil(list.length / 4));
+
+    uiFlagPage = Math.min(uiFlagPage, n - 1);
+
+    content =
+      '<div class="grid2 u-flags">' +
+        list
+          .slice(uiFlagPage * 4, uiFlagPage * 4 + 4)
+          .map(([id, name]) =>
+            '<label>' +
+              '<input type="checkbox" data-chg="flag" data-k="' +
+                id + '"' +
+                (E.flags[id] ? ' checked' : '') +
+              '>' +
+              esc(name) +
+              ' <small>' + (R[id]?.fan || 0) + '</small>' +
+            '</label>'
+          )
+          .join('') +
+      '</div>' +
+      uPagerSlot(uiFlagPage, n, 'uiFlagPage');
+  }
+
+  const statsHtml =
+    '<div class="editor-stats">' +
+      (
+        i === 0
+          ? '至少需要' + requiredTiles +
+            '張，現輸入' + currentTiles + '張'
+          : '共' + currentTiles + '張'
+      ) +
+    '</div>';
+
+  return (
+    '<div class="editor-screen u-editor">' +
+      '<header class="editor-head">' +
+        ub('‹', 'editorBack') +
+        '<span>' +
+          playerLabel(E.winner) + ' ' +
+          (E.self ? '自摸' : '食 ' + nm(E.disc)) +
+        '</span>' +
+        ub('☰', 'uiNav', 'aria-label="切換畫面"') +
+      '</header>' +
+
+      '<div class="u-steps">' +
+        steps.map(([v, name], j) =>
+          ub(
+            (j < i ? '✓ ' : j + 1 + ' ') + name,
+            'mode',
+            'data-v="' + v + '"',
+            j === i ? 'current' : ''
+          )
+        ).join('') +
+      '</div>' +
+
+      '<div class="u-instruction">' +
+        '第' + (i + 1) + '步 · ' + esc(editorHint()) +
+      '</div>' +
+
+      '<main class="editor-main">' +
+        statsHtml +
+
+        (
+          editorWin() == null && i < 2
+            ? '<div class="editor-live idle">待選食糊牌後計番</div>'
+            : liveTotalHtml()
+        ) +
+
+        editorPoolHtml() +
+
+        (
+          i === 0
+            ? '<div class="editor-tools">' +
+                ub('退一張', 'undoTile') +
+                ub('清空', 'clearHand') +
+                (
+                  isHK() && !pending.length
+                    ? ub('快速記番', 'quickStart')
+                    : ''
+                ) +
+              '</div>'
+            : ''
+        ) +
+
+        '<div class="editor-panel">' +
+          content +
+        '</div>' +
+      '</main>' +
+
+      '<footer class="editor-footer">' +
+        '<div class="editor-finish">' +
+          ub(i ? '上一步' : '返回', 'uiPrev') +
+          ub(
+            i === 4 ? '確認番數' : '下一步',
+            'uiNext',
+            '',
+            'primary'
+          ) +
+        '</div>' +
+      '</footer>' +
+    '</div>'
+  );
+}
+ function fitEditor(){const b=document.querySelector('.editor-screen');if(!b)return;const vv=window.visualViewport,h=vv?.height||innerHeight,w=vv?.width||innerWidth,compact=h<720,cols=editorColumns(physicalEntries().length);b.style.setProperty('--editor-height',h+'px');b.style.top=(vv?.offsetTop||0)+'px';b.classList.toggle('editor-compact',compact);const measure=k=>b.querySelector(k)?.getBoundingClientRect().height||0,fixed=measure('.editor-head')+measure('.u-steps')+measure('.u-instruction')+measure('.editor-footer'),reserve=E.mode==='pick'?(compact?320:340):(compact?220:240),cell=Math.floor((Math.max(102,h-fixed-reserve)-12)/3),tw=Math.max(24,Math.min(56,Math.floor((Math.min(650,w-32)-(cols-1)*6)/cols),Math.floor(cell*.74))),th=Math.round(tw/.74);b.style.setProperty('--pile-frame-h',(th*3+12)+'px');b.style.setProperty('--pile-cols',cols);b.style.setProperty('--tile-w',tw+'px');b.style.setProperty('--tile-h',th+'px');b.style.setProperty('--face-size',Math.max(16,Math.min(26,tw*.48))+'px');b.style.setProperty('--suit-size',Math.max(10,tw*.23)+'px');}
 function uShowGroups(t){uiGroupTile=t;uiGroups=[];if(isHK()){if(allCounts()[t]!==4){toast('這款牌不足四張，不需標示槓；請確認門清狀態後繼續。');return;}for(const open of [true,false])uiGroups.push({t:'kong',tile:t,open,physical:Array(4).fill(t)});}else{const c=allCounts().map((n,tile)=>n-(E.marks[tile]||0));if(t<27)for(let n=Math.max(0,t%9-2);n<=Math.min(6,t%9);n++){const a=Math.floor(t/9)*9+n;if([a,a+1,a+2].every(tile=>c[tile]>0))uiGroups.push({t:'chow',tile:a,open:true,physical:[a,a+1,a+2]});}if(c[t]>=3)uiGroups.push({t:'pung',tile:t,open:true,physical:Array(3).fill(t)});if(c[t]>=4)for(const open of [true,false])uiGroups.push({t:'kong',tile:t,open,physical:Array(4).fill(t)});}const n=Math.max(1,Math.ceil(uiGroups.length/4));uiGroupPage=Math.max(0,Math.min(uiGroupPage,n-1));const groupsHtml=uiGroups.slice(uiGroupPage*4,uiGroupPage*4+4).map((g,i)=>{const label=g.t==='chow'?'上':g.t==='pung'?'碰':g.open?'明槓':'暗槓';const tilesHtml=g.physical.map((tile,j)=>mt(tile,{back:g.open===false&&(j===0||j===3)})).join('');return ub('<span>'+label+'</span><div class="u-minirow">'+tilesHtml+'</div>','uiGroup','data-i="'+(uiGroupPage*4+i)+'"','u-group');}).join('');const emptyHtml=!uiGroups.length?'<p>這張牌目前沒有可標示的明牌組合；沒有明牌可直接下一步。</p>':'';uPopup(isHK()?'選擇槓的類型':'選擇明牌組合','<div class="grid2">'+groupsHtml+'</div>'+emptyHtml,up(uiGroupPage,n,'uiGroupPage')+ub('取消','uiClose'));}
  function uResult(){if(entryStep!=='hand')return {body:uEntry(),footer:ub('返回牌桌（保留輸入）','tab','data-v="table"')};const r=analyze(),quick=isHK()&&!!E.quick,hasWild=isWild()&&jokerTotal()>0;let body='<p class="u-caption">'+playerLabel(E.winner)+' '+(E.self?'自摸':'食 '+nm(E.disc))+'</p>';
  const valid=quick||!!(r&&!r.error&&(!hasWild||r.complete));
