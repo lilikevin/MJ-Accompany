@@ -2063,8 +2063,250 @@ function cardGroups(res){
 }
  function shareTiles(g){const mk=(t,i)=>cardTile(t,{wild:g.wild[i],win:g.win===i}),n=g.tiles.length;if(n<=7)return g.tiles.map(mk).join('');const rows=Math.ceil(n/7),per=Math.ceil(n/rows);let h='<div style="display:flex;flex-direction:column;gap:4px;align-items:center">';for(let r=0;r<rows;r++){const a=r*per;h+='<div style="display:flex;gap:1px">'+g.tiles.slice(a,a+per).map((t,i)=>mk(t,a+i)).join('')+'</div>';}return h+'</div>';}
 
-function shareCard(res,total,raw){if(!res||res.error)return '';if(isWild()&&!res.complete)return '';let gs;try{gs=cardGroups(res);}catch(e){return '';}if(!gs||!gs.length)return '';const m=wildMult(),fl=E.flowers.map((f,i)=>f?M.FLOWERS[i]:'').filter(Boolean);let groupsHtml;if(isHK()){groupsHtml='<div style="display:flex;flex-wrap:wrap;justify-content:center">'+gs.map(g=>'<div style="display:inline-flex;flex-direction:column;align-items:center;margin:3px 4px"><div style="display:inline-flex;gap:1px;padding:6px 6px 9px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22)">'+shareTiles(g)+'</div><small style="opacity:.8;margin-top:2px;font-size:11px">'+esc(g.k)+'</small></div>').join('')+'</div>';}else{const meldCount=E.melds.length+(isWild()?E.wildGroups.length:0),melds=gs.slice(0,meldCount),hands=gs.slice(meldCount),tileCount=arr=>arr.reduce((n,g)=>n+g.tiles.length,0),leftWeight=Math.max(1,tileCount(melds)),rightWeight=Math.max(1,tileCount(hands)),ratio=Math.max(0.6,Math.min(1.67,Math.sqrt(leftWeight/rightWeight))),renderSet=(g,isMeld,single)=>{const closed=isMeld&&String(g.k).includes('暗槓'),count=g.tiles.length,cols=count<=7?Math.max(1,count):Math.ceil(count/Math.ceil(count/7));const tiles=closed?g.tiles.map((t,i)=>i===0||i===count-1?mt(t,{back:true}):cardTile(t,{wild:!!g.wild?.[i],win:g.win===i})).join(''):shareTiles(g);return '<div class="u-share-set" style="--group-cols:'+cols+';min-width:0;container-type:inline-size;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:7px 3px 5px;border-radius:7px;background:rgba(255,255,255,.07);'+(single?'grid-column:1/-1;':'')+'"><div style="display:flex;justify-content:center;align-items:center;gap:1px;max-width:100%;padding:4px 0 8px">'+tiles+'</div><small style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">'+esc(g.k)+'</small></div>';},renderSide=(arr,label,isMeld)=>'<div style="min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px"><small style="font-size:11px;opacity:.8">'+label+'</small><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:stretch;min-width:0">'+arr.map(g=>renderSet(g,isMeld,arr.length===1)).join('')+'</div></div>';groupsHtml='<style>#shareCard .u-share-set .mt{box-sizing:border-box;width:min(22px,calc((100cqw - 6px)/var(--group-cols)))!important;min-width:0!important;height:auto!important;min-height:0!important;aspect-ratio:22/31}#shareCard .u-share-set .mt b{font-size:clamp(9px,18cqw,14px)}#shareCard .u-share-set .mt i{font-size:8px}#shareCard .u-share-set .mt.h6 b{font-size:0;width:10px;height:16px}</style><div style="display:grid;grid-template-columns:'+(melds.length&&hands.length?'minmax(0,'+ratio.toFixed(3)+'fr) minmax(0,1fr)':'minmax(0,1fr)')+';gap:8px;align-items:center;margin-top:4px">'+(melds.length?renderSide(melds,'明牌／槓組',true):'')+(hands.length?renderSide(hands,'手牌',false):'')+'</div>';}let totalHtml;if(isHK()){const cap=hkCap();totalHtml='<div style="font-size:36px;font-weight:700;color:var(--acc);line-height:1.1">'+total+' 番</div>'+(raw>cap?'<div style="font-size:12px;opacity:.8">(疊加 '+raw+' 番，封頂 '+cap+' 番)</div>':'');}else{totalHtml='<div style="font-size:36px;font-weight:700;color:var(--acc);line-height:1.1">'+(total*m)+' 番</div>'+(m>1?'<div style="font-size:12px;opacity:.8">'+total+' 番 × '+m+'（冇用百搭）</div>':'')+'<div style="font-size:11px;opacity:.7">牌型番數（已含底），未計莊家及連莊加番</div>';}let who='';if(E.winner!=null)who=nm(E.winner)+' '+(E.self?'自摸':'出銃'+(E.disc!=null?'('+nm(E.disc)+')':''));const fanNames=[...new Set(curItems(res).filter(f=>f.id!=='adjust').map(f=>f.id==='di'?'底':f.name).filter(Boolean))],fanNamesHtml=fanNames.length?'<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px 10px;margin:7px auto 0;max-width:100%;font-size:clamp(10px,2.7vw,13px);line-height:1.4">'+fanNames.map(name=>'<span style="max-width:100%;overflow-wrap:anywhere;color:#eef5ef">'+esc(name)+'</span>').join('')+'</div>':'';return '<div id="shareCard" class="stl" style="background:linear-gradient(160deg,#173f2f,#0f2a1f);border:2px solid var(--acc);border-radius:16px;padding:14px 10px 12px;margin:12px 0;text-align:center"><div style="font-size:13px;opacity:.85;margin-bottom:8px">麻雀計番 · '+esc(gameName())+(who?'<br>'+who:'')+'</div>'+groupsHtml+(fl.length?'<div style="font-size:12px;opacity:.85;margin-top:4px">花牌：'+fl.map(f=>esc(f)).join(' ')+'</div>':'')+'<div style="margin-top:8px;font-size:13px;opacity:.9">總番數</div>'+totalHtml+fanNamesHtml+'<div style="font-size:10px;opacity:.55;margin-top:6px">麻雀計番 '+esc(APP_VERSION)+'</div></div><div class="hint">上面的圖形可直接截圖分享，已包含番種名稱。牌型分組為示意。</div>';}
+ function shareCard(res, total, raw) {
+  if (!res || res.error) return '';
+  if (isWild() && !res.complete) return '';
 
+  let gs;
+  try {
+    gs = cardGroups(res);
+  } catch (e) {
+    return '';
+  }
+  if (!gs || !gs.length) return '';
+
+  const m = wildMult();
+  const fl = E.flowers
+    .map((f, i) => f ? M.FLOWERS[i] : '')
+    .filter(Boolean);
+
+  let groupsHtml;
+
+  if (isHK()) {
+    groupsHtml =
+      '<div style="display:flex;flex-wrap:wrap;justify-content:center">' +
+      gs.map(g =>
+        '<div style="display:inline-flex;flex-direction:column;align-items:center;margin:3px 4px">' +
+          '<div style="display:inline-flex;gap:1px;padding:6px 6px 9px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22)">' +
+            shareTiles(g) +
+          '</div>' +
+          '<small style="opacity:.8;margin-top:2px;font-size:11px">' +
+            esc(g.k) +
+          '</small>' +
+        '</div>'
+      ).join('') +
+      '</div>';
+  } else {
+    const meldCount =
+      E.melds.length + (isWild() ? E.wildGroups.length : 0);
+
+    const melds = gs.slice(0, meldCount);
+    const hands = gs.slice(meldCount);
+
+    const tileCount = arr =>
+      arr.reduce((n, g) => n + g.tiles.length, 0);
+
+    const leftWeight = Math.max(1, tileCount(melds));
+    const rightWeight = Math.max(1, tileCount(hands));
+
+    const ratio = Math.max(
+      0.6,
+      Math.min(1.67, Math.sqrt(leftWeight / rightWeight))
+    );
+
+    const dense = Math.max(
+      Math.ceil(melds.length / 2),
+      Math.ceil(hands.length / 2),
+      ...gs.map(g => Math.ceil(g.tiles.length / 7))
+    ) >= 3;
+
+    const tileMax = dense ? 18 : 22;
+    const faceMax = dense ? 12 : 14;
+
+    const renderSet = (g, isMeld, single) => {
+      const closed =
+        isMeld && String(g.k).includes('暗槓');
+
+      const count = g.tiles.length;
+      const cols = count <= 7
+        ? Math.max(1, count)
+        : Math.ceil(count / Math.ceil(count / 7));
+
+      const tiles = closed
+        ? g.tiles.map((t, i) =>
+            i === 0 || i === count - 1
+              ? mt(t, { back: true })
+              : cardTile(t, {
+                  wild: !!g.wild?.[i],
+                  win: g.win === i
+                })
+          ).join('')
+        : shareTiles(g);
+
+      return (
+        '<div class="u-share-set" style="' +
+          '--group-cols:' + cols + ';' +
+          'min-width:0;' +
+          'container-type:inline-size;' +
+          'display:flex;' +
+          'flex-direction:column;' +
+          'align-items:center;' +
+          'justify-content:center;' +
+          'gap:5px;' +
+          'padding:7px 3px 5px;' +
+          'border-radius:7px;' +
+          'background:rgba(255,255,255,.07);' +
+          (single ? 'grid-column:1/-1;' : '') +
+        '">' +
+          '<div style="display:flex;justify-content:center;align-items:center;gap:1px;max-width:100%;padding:4px 0 8px">' +
+            tiles +
+          '</div>' +
+          '<small style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">' +
+            esc(g.k) +
+          '</small>' +
+        '</div>'
+      );
+    };
+
+    const renderSide = (arr, label, isMeld) =>
+      '<div style="min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px">' +
+        '<small style="font-size:11px;opacity:.8">' +
+          label +
+        '</small>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:stretch;min-width:0">' +
+          arr.map(g =>
+            renderSet(g, isMeld, arr.length === 1)
+          ).join('') +
+        '</div>' +
+      '</div>';
+
+    groupsHtml =
+      '<style>' +
+        '#shareCard .u-share-set .mt{' +
+          'box-sizing:border-box;' +
+          'width:min(' + tileMax + 'px,calc((100cqw - 6px)/var(--group-cols)))!important;' +
+          'min-width:0!important;' +
+          'height:auto!important;' +
+          'min-height:0!important;' +
+          'aspect-ratio:22/31;' +
+        '}' +
+        '#shareCard .u-share-set .mt b{' +
+          'font-size:clamp(9px,18cqw,' + faceMax + 'px);' +
+        '}' +
+        '#shareCard .u-share-set .mt i{' +
+          'font-size:8px;' +
+        '}' +
+        '#shareCard .u-share-set .mt.h6 b{' +
+          'font-size:0;' +
+          'width:10px;' +
+          'height:16px;' +
+        '}' +
+      '</style>' +
+      '<div style="' +
+        'display:grid;' +
+        'grid-template-columns:' +
+          (
+            melds.length && hands.length
+              ? 'minmax(0,' + ratio.toFixed(3) + 'fr) minmax(0,1fr)'
+              : 'minmax(0,1fr)'
+          ) + ';' +
+        'gap:8px;' +
+        'align-items:center;' +
+        'margin-top:4px;' +
+      '">' +
+        (melds.length
+          ? renderSide(melds, '明牌／槓組', true)
+          : '') +
+        (hands.length
+          ? renderSide(hands, '手牌', false)
+          : '') +
+      '</div>';
+  }
+
+  let totalHtml;
+
+  if (isHK()) {
+    const cap = hkCap();
+
+    totalHtml =
+      '<div style="font-size:36px;font-weight:700;color:var(--acc);line-height:1.1">' +
+        total + ' 番' +
+      '</div>' +
+      (raw > cap
+        ? '<div style="font-size:12px;opacity:.8">(疊加 ' +
+            raw + ' 番，封頂 ' + cap + ' 番)</div>'
+        : '');
+  } else {
+    totalHtml =
+      '<div style="font-size:36px;font-weight:700;color:var(--acc);line-height:1.1">' +
+        (total * m) + ' 番' +
+      '</div>' +
+      (m > 1
+        ? '<div style="font-size:12px;opacity:.8">' +
+            total + ' 番 × ' + m + '（冇用百搭）</div>'
+        : '') +
+      '<div style="font-size:11px;opacity:.7">' +
+        '牌型番數（已含底），未計莊家及連莊加番' +
+      '</div>';
+  }
+
+  let who = '';
+
+  if (E.winner != null) {
+    who =
+      nm(E.winner) + ' ' +
+      (
+        E.self
+          ? '自摸'
+          : '出銃' + (E.disc != null ? '(' + nm(E.disc) + ')' : '')
+      );
+  }
+
+  const fanNames = [
+    ...new Set(
+      curItems(res)
+        .filter(f => f.id !== 'adjust')
+        .map(f => f.id === 'di' ? '底' : f.name)
+        .filter(Boolean)
+    )
+  ];
+
+  const fanNamesHtml = fanNames.length
+    ? '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px 10px;margin:7px auto 0;max-width:100%;font-size:clamp(10px,2.7vw,13px);line-height:1.4">' +
+        fanNames.map(name =>
+          '<span style="max-width:100%;overflow-wrap:anywhere;color:#eef5ef">' +
+            esc(name) +
+          '</span>'
+        ).join('') +
+      '</div>'
+    : '';
+
+  return (
+    '<div id="shareCard" class="stl" style="background:linear-gradient(160deg,#173f2f,#0f2a1f);border:2px solid var(--acc);border-radius:16px;padding:14px 10px 12px;margin:12px 0;text-align:center">' +
+      '<div style="font-size:13px;opacity:.85;margin-bottom:8px">' +
+        '麻雀計番 · ' + esc(gameName()) +
+        (who ? '<br>' + who : '') +
+      '</div>' +
+      groupsHtml +
+      (fl.length
+        ? '<div style="font-size:12px;opacity:.85;margin-top:4px">' +
+            '花牌：' + fl.map(f => esc(f)).join(' ') +
+          '</div>'
+        : '') +
+      '<div style="margin-top:8px;font-size:13px;opacity:.9">' +
+        '總番數' +
+      '</div>' +
+      totalHtml +
+      fanNamesHtml +
+      '<div style="font-size:10px;opacity:.55;margin-top:6px">' +
+        '麻雀計番 ' + esc(APP_VERSION) +
+      '</div>' +
+    '</div>' +
+    '<div class="hint">' +
+      '上面的圖形可直接截圖分享，已包含番種名稱。牌型分組為示意。' +
+    '</div>'
+  );
+}
  function jiuziShape(c){
   for(let su=0;su<3;su++){
     const base=[3,1,1,1,1,1,1,1,3]; let ok=true,extra=0,tot=0;
