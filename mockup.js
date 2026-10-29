@@ -73,6 +73,7 @@ function load(){
 }
 function saveDraft(){
   try{
+    if(draftCache&&!hasCurrentData()&&pending.length===0&&!hasEntryDraft())return;
     if(!hasCurrentData() && pending.length===0 && !hasEntryDraft()){ localStorage.removeItem(DRAFT_KEY); return; }
     const draft={
       E:JSON.parse(JSON.stringify(E)),
@@ -2584,6 +2585,7 @@ function uiAction(a,d){
  if(a==='discardDraft'||a==='clearEntry')uiResume=null;
  if(!a.startsWith('ui'))return false;
  switch(a){
+   case 'uiRestoreDraft':if(applyDraft()){uiModal=null;setTab('calc');toast('已恢復未完成的輸入');}else{toast('未能恢復草稿，請返回牌桌後重試');}break;
  case 'uiClose':uiModal=null;break;
  case 'uiContinue':uiContinue();break;
  case 'uiDiscard':if(confirm('放棄目前未完成輸入？')){E=newEntry();pending=[];entryStep='pick';uiResume=null;draftCache=null;clearDraft();uiModal=null;setTab('table');}break;
@@ -2631,11 +2633,12 @@ function uiAction(a,d){
 function uiChange(k,el){const d=el.dataset,v=el.value;if(k==='uiName'){if(v.trim())S.names[+d.p]=v.trim().slice(0,10);return true;}if(k==='uiAvatar'){if(PLAYER_EMOJIS.includes(v))S.avatars[+d.p]=v;return true;}if(k==='uiBool'){(d.hk==='true'?S.cfg.hk:S.cfg)[d.k]=el.checked;return true;}if(k==='uiHK'){if(HK_PRESETS[v])S.cfg.hk.preset=v;return true;}if(k==='uiTableName'){const name=v.trim().replace(/[<>]/g,'').slice(0,24);if(name)uSetOrigin(uOrigin().kind,name);return true;}if(k==='uiTableQuery'){uiTableQuery=v.slice(0,80);uiPage=0;return true;}if(k==='uiRule'){const n=Number(v);if(!Number.isFinite(n)||n<0||n>100000){toast('請輸入0至100000的番數');return true;}const o=OV();(o[d.id]||(o[d.id]={}))[d.f]=n;if(uiWizard)uiWizard.touched=true;if(uOrigin().kind==='preset')uSetOrigin('edited',uOrigin().name);return true;}return false;}
 
 let _hasDraft = loadDraft();
-if(window.__UI_TEST__){window.__UI_CORE__={get:()=>S,set:x=>{S=norm(x);pickM();},entry:()=>E,setEntry:x=>{E=Object.assign(newEntry(),x);derive();},act,change:uiChange,mkTxns,applyHand,analyze,curItems,historyFinancials,validateCurrentEntry,finalizeFinancialSnapshots,uBlankValues,uApplySource,uOrigin,uImportPayload,uEntry,uResult,uWizardView,editorHtml,uTableLayout,uTableView,uTableFooter,modal:()=>uiModal,wizard:()=>uiWizard,resume:()=>uiResume,clearResume:()=>uiResume=null,location:()=>({tab,...uiCurrentLocation()}),capture:uiCaptureResume,canResume:uiCanResume,saveDraft,loadDraft,applyDraft};}else render();
-if(_hasDraft){
-  // show draft choice banner via lastEntryMessage style handled in viewTable
-  toast('找到未完成草稿，可選擇繼續或放棄');
-}
+if(window.__UI_TEST__){window.__UI_CORE__={get:()=>S,set:x=>{S=norm(x);pickM();},entry:()=>E,setEntry:x=>{E=Object.assign(newEntry(),x);derive();},act,change:uiChange,mkTxns,applyHand,analyze,curItems,historyFinancials,validateCurrentEntry,finalizeFinancialSnapshots,uBlankValues,uApplySource,uOrigin,uImportPayload,uEntry,uResult,uWizardView,editorHtml,uTableLayout,uTableView,uTableFooter,modal:()=>uiModal,wizard:()=>uiWizard,resume:()=>uiResume,clearResume:()=>uiResume=null,location:()=>({tab,...uiCurrentLocation()}),capture:uiCaptureResume,canResume:uiCanResume,saveDraft,loadDraft,applyDraft};}else{if(_hasDraft){setTab('table');const who=Number.isInteger(draftCache.E.winner)?esc(S.names[draftCache.E.winner]):'未選擇玩家';const steps={pick:'輸入手牌',meld:'確認槓／明牌',jmeld:'確認百搭明牌',win:'確認食糊牌',flowers:'花牌',flags:'特殊情況'};uPopup('找到未完成的輸入','<div class="u-stack"><p>玩家：'+who+'</p><p>輸入進度：'+esc(steps[draftCache.E.mode]||'未完成輸入')+'</p><p>是否繼續剛才的輸入？返回牌桌仍會保留草稿。</p>'+ub('繼續輸入','uiRestoreDraft','','primary')+ub('返回牌桌，保留草稿','uiClose')+'</div>');}render();}
 
+
+
+window.addEventListener('pagehide',()=>saveDraft());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveDraft();});
 
 })();
+
