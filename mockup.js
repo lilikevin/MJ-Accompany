@@ -2501,7 +2501,9 @@ function uiCanResume(){return hasEntryDraft()||!!draftCache;}
 function uiContinue(){if(draftCache&&!applyDraft()){toast('無法還原草稿，未清除原資料');return;}const at=uiValidResume(uiResume)||uiCurrentLocation();entryStep=at.entryStep;E.mode=at.mode;E.shapeDone=at.shapeDone;uiReview=at.review;uiPage=at.page;uiFlagPage=at.flagPage;uiQuickPage=at.quickPage;uiModal=null;setTab('calc');}
 function uPopup(title,body,footer=''){uiModal={title,body,footer};}
 function uDialog(){return uiModal?'<div class="u-backdrop"><section class="u-dialog" role="dialog" aria-modal="true"><header><h3>'+esc(uiModal.title)+'</h3>'+ub('×','uiClose','aria-label="關閉"')+'</header><div class="u-dialog-body">'+uiModal.body+'</div><footer>'+uiModal.footer+'</footer></section></div>':'';}
-function uFrame(title,body,footer=''){const isTable=body.includes('class="u-board"');return '<div class="u-shell"><header class="u-header">'+(isTable?'':ub('‹','uiBack','aria-label="返回"'))+'<h3>'+esc(title)+'</h3>'+ub('☰','uiNav','aria-label="切換畫面"')+'</header><main class="u-content">'+body+'</main><footer class="u-footer">'+footer+'</footer></div>';}function uOrigin(){return (S.cfg.tableOrigins||{})[pkey()]||{kind:'preset',name:isHK()?'廣東牌預設番表':PRESET_NAME[curPreset()]};}
+function uDeveloperInfo(){return '<div class="u-dev-info" style="flex:none;text-align:center;padding:8px 4px;font-size:12px;line-height:1.6;color:#adc4b5"><div>麻雀計番 · '+esc(APP_VERSION)+'</div><div>開發者：<a href="https://www.instagram.com/'+encodeURIComponent(DEV_IG)+'/" target="_blank" rel="noopener noreferrer" style="color:var(--acc,#e6b422);text-decoration:none">@'+esc(DEV_IG)+'</a></div></div>';}
+function uFrame(title,body,footer=''){const isTable=body.includes('class="u-board"'),showDev=['選擇遊戲','高級設置','高級設定'].includes(title),dev=showDev?uDeveloperInfo():'';return '<div class="u-shell"><header class="u-header">'+(isTable?'':ub('‹','uiBack','aria-label="返回"'))+'<h3>'+esc(title)+'</h3>'+ub('☰','uiNav','aria-label="切換畫面"')+'</header><main class="u-content">'+body+'</main><footer class="u-footer">'+footer+dev+'</footer></div>';}
+function uOrigin(){return (S.cfg.tableOrigins||{})[pkey()]||{kind:'preset',name:isHK()?'廣東牌預設番表':PRESET_NAME[curPreset()]};}
 function uSetOrigin(kind,name){(S.cfg.tableOrigins||(S.cfg.tableOrigins={}))[pkey()]={kind,name};}
 function gameName(){const o=uOrigin();return ['blank','import','saved','edited'].includes(o.kind)?gameLabel(S.game)+' · '+o.name+(o.kind==='edited'?'（已自訂）':''):base_gameName();}
 function uToggle(n,k,hk=false){return '<label class="u-check">'+n+'<input type="checkbox" data-chg="uiBool" data-k="'+k+'" data-hk="'+hk+'"'+((hk?S.cfg.hk:S.cfg)[k]?' checked':'')+'></label>';}
@@ -2512,7 +2514,7 @@ function uChooser(){return '<div class="u-center"><h2>選擇玩法</h2>'+[['tw',
 function uBlankValues(){const o={};fanList().forEach(f=>{o[f.id]={fan:0};if(f.fanC!=null)o[f.id].fanC=0;});if(!isHK())o.di={fan:0};return o;}
 function uApplySource(kind,value){if(uiWizard?.touched&&!confirm('更換來源會取代目前番表草稿，繼續？'))return false;
  if(kind==='preset'){if(!isHK()){if(isWild())S.cfg.wildPreset=+value;else S.cfg.preset=+value;}pickM();S.cfg.overs[pkey()]={};delete S.cfg.activeCustom[pkey()];uSetOrigin('preset',isHK()?'廣東牌預設番表':PRESET_NAME[+value]);}
- if(kind==='blank'){S.cfg.overs[pkey()]=uBlankValues();delete S.cfg.activeCustom[pkey()];uSetOrigin('blank','自訂番表');}
+ if(kind==='blank'){S.cfg.overs[pkey()]=uBlankValues();delete S.cfg.activeCustom[pkey()];uSetOrigin('blank','自訂番表');}             
  if(kind==='saved'){const x=S.cfg.customTables.find(x=>x.id===value);if(!x)throw Error('找不到番表');if((x.p==='hk')!==isHK())throw Error('番表玩法不相容');if(!isHK()){if(isWild())S.cfg.wildPreset=+x.p;else S.cfg.preset=+x.p;}pickM();S.cfg.overs[pkey()]=uc(x.over);S.cfg.activeCustom[pkey()]=x.id;uSetOrigin('saved',x.name);}
  if(uiWizard){uiWizard.stage='table';uiWizard.touched=false;}uiPage=0;uiTableQuery='';return true;
 }
