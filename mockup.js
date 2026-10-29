@@ -893,14 +893,42 @@ function ordinaryGroupTools(){
   if(E.pickRep){const pr=E.pickRep;h+='<div class="editor-group-actions"><span>這組代表：</span>'+pr.cands.map(t=>'<button data-act="repPick" data-t="'+t+'">'+esc(pr.grp.t==='chow'?(t%9+1)+''+(t%9+2)+(t%9+3)+M.SUITS[Math.floor(t/9)]:tileName(t))+'</button>').join('')+'<button data-act="repCancel">取消</button></div>';}
   return h;
 }
-function editorHint(){
-  if(editorError)return editorError;
-  if(E.mode==='pick')return '點牌盤加牌；點牌堆刪牌';
-  if(E.mode==='jmeld')return '選3或4張牌，再選上／碰／槓';
-  if(E.mode==='meld')return isHK()?'確認槓組、明／暗槓及門清狀態':'點牌堆標明牌；點明牌組可移除';
-  if(E.mode==='flowers')return '點花牌選取或取消；沒有可略過';
-  if(E.mode==='flags')return '勾選本局特殊情況；沒有可略過';
-  if(isHK())return pending.length?'請選共同放炮牌，須與其他食糊者相同':'食糊牌可選填；影響番種時須補選';
+function editorHint() {
+  if (editorError) return editorError;
+
+  if (E.mode === 'pick') {
+    const requiredTiles = isHK() ? 14 : 17;
+    const currentTiles = physicalEntries().length;
+
+    return '至少需要' + requiredTiles +
+      '張，現輸入' + currentTiles +
+      '張；點牌盤加牌，點牌堆刪牌';
+  }
+
+  if (E.mode === 'jmeld') {
+    return '選3或4張牌，再選上／碰／槓';
+  }
+
+  if (E.mode === 'meld') {
+    return isHK()
+      ? '確認槓組、明／暗槓及門清狀態'
+      : '點牌堆標明牌；點明牌組可移除';
+  }
+
+  if (E.mode === 'flowers') {
+    return '點花牌選取或取消；沒有可略過';
+  }
+
+  if (E.mode === 'flags') {
+    return '勾選本局特殊情況；沒有可略過';
+  }
+
+  if (isHK()) {
+    return pending.length
+      ? '請選共同放炮牌，須與其他食糊者相同'
+      : '食糊牌可選填；影響番種時須補選';
+  }
+
   return '點牌堆選食糊牌；再點同款牌取消';
 }
 function editorPanelHtml(){
