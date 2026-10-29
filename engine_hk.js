@@ -91,8 +91,8 @@ function evalBasic(ctx,sets,P,pl){
   const concealedAll=(ctx.concealed!=null)?!!ctx.concealed:sets.every(s=>!s.open&&s.t!=='kong');
   stateItems(ctx,items,concealedAll);
   if(chows.length===4) push('pinghu');
-  if(chows.length===0) push('duidui');
-  const dr=trips.filter(s=>s.tile>=31).length;
+ const ac=trips.filter(s=>!s.ronPung&&s.t!=='kong').length,isKankan=trips.length===4&&kongs.length===0&&ac===4&&concealedAll;if(chows.length===0&&!isKankan)push('duidui');
+ const dr=trips.filter(s=>s.tile>=31).length;
   push('sanyuan',dr);
   if(dr===3) push('dasanyuan'); else if(dr===2&&P>=31) push('xiaosanyuan');
   let fp=0;
