@@ -713,14 +713,7 @@ function viewPlayers(){
   h+='</div><label>莊家座位<select data-chg="playerDealer">'+Array.from(WIND).map((w,i)=>'<option value="'+i+'"'+(d.dealerSeat===i?' selected':'')+'>'+w+'</option>').join('')+'</select></label>';
   return h+'<div class="btnrow"><button class="primary" data-act="savePlayers">確認並返回牌桌</button>'+(S.playersReady?'<button data-act="cancelPlayers">取消修改</button>':'<button data-act="toChooser">返回玩法選擇</button>')+'</div>';
 }
-function savePlayerSetup(){
-  readPlayerNames();const d=playerDraft;if(!d)return false;
-  const names=d.names.map((n,p)=>String(n).trim().slice(0,10)||S.names[p]||('玩家'+(p+1)));
-  if(new Set(names).size!==4){toast('請使用不同玩家名稱，以免記錯');return false;}
-  if(new Set(d.seat).size!==4||d.seat.some(p=>!Number.isInteger(p)||p<0||p>3)){toast('四個座位必須分配不同玩家');return false;}
-  S.names=names;S.avatars=d.avatars.map((e,p)=>PLAYER_EMOJIS.includes(e)?e:DEFAULT_AVATARS[p]);S.seat=d.seat.slice();S.dealerSeat=d.dealerSeat;S.playersReady=true;
-  playerDraft=null;nameEdits.clear();setTab('table');toast('玩家設定已儲存');return true;
-}
+function savePlayerSetup(){readPlayerNames();const d=playerDraft;if(!d)return false;const names=d.names.map((n,p)=>String(n).trim().slice(0,10)||S.names[p]||('玩家'+(p+1)));if(new Set(names).size!==4){toast('請使用不同玩家名稱，以免記錯');return false;}if(new Set(d.seat).size!==4||d.seat.some(p=>!Number.isInteger(p)||p<0||p>3)){toast('四個座位必須分配不同玩家');return false;}S.names=names;S.avatars=d.avatars.map((e,p)=>PLAYER_EMOJIS.includes(e)?e:DEFAULT_AVATARS[p]);S.seat=d.seat.slice();S.dealerSeat=d.dealerSeat;if(S.history.length===0)S.startDealerPid=S.seat[S.dealerSeat];S.playersReady=true;playerDraft=null;nameEdits.clear();setTab('table');toast('玩家設定已儲存');return true;}
 function recordLabel(r,idx){
   const no='#'+(idx+1);
   const name=p=>(S.names&&S.names[p])||('玩家'+(Number(p)+1));
@@ -1497,10 +1490,7 @@ function validateCur(){
   if(pr.length){ toast(pr[0]); return false; }
   return true;
 }
-function resetGameData(){
-  try{ localStorage.setItem(PREV_KEY,JSON.stringify(S)); }catch(e){}
-  S.history=[]; S.ledger=[]; S.streak=0; S.wind=0; S.dealerSeat=0; E=newEntry();pending=[];entryStep='pick';lastEntryMessage='';playerDraft=null;nameEdits.clear();
-}
+function resetGameData(){try{localStorage.setItem(PREV_KEY,JSON.stringify(S));}catch(e){}S.history=[];S.ledger=[];S.streak=0;S.wind=0;S.dealerSeat=0;S.startDealerPid=null;E=newEntry();pending=[];entryStep='pick';lastEntryMessage='';playerDraft=null;nameEdits.clear();}
 function act(a,d){
   d=d||{};if(uiAction(a,d)){save();render();return;}
   if(['mode','tile','poolTap','clearHand','clearWin','undoTile','editorEdit'].includes(a))editorError='';
