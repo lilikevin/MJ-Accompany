@@ -931,6 +931,126 @@ function editorHint() {
 
   return '點牌堆選食糊牌；再點同款牌取消';
 }
+
+ function uiInvalidCalcHint(r, hasWild, busy) {
+  const reasons = [];
+  const add = text => {
+    if (text && !reasons.includes(text)) reasons.push(text);
+  };
+
+  // 優先保留計番引擎提供的具體原因。
+  const engineError =
+    typeof r?.error === 'string' ? r.error.trim() : '';
+
+  if (engineError) add(engineError);
+
+  const noTiles =
+    !E.all.length && !E.wildGroups.length;
+
+  const unfinishedWildGroup =
+    !!E.pickRep || Object.keys(E.jsel || {}).length > 0;
+
+  if (noTiles) {
+    add('第一步「選牌」：尚未輸入手牌，請先加入牌。');
+  }
+
+  if (unfinishedWildGroup) {
+    add(
+      '第二步「明牌」：含百搭明牌尚未完成，' +
+      '請完成組牌、選定代表牌，或取消選取。'
+    );
+  }
+
+  if (!isHK() && E.partBad) {
+    add(
+      '第二步「明牌」：目前標記的牌無法組成完整的上／碰／槓，' +
+      '請檢查或移除未完成的明牌標記。'
+    );
+  }
+
+  if (isHK()) {
+    const extraTiles = E.all.length - 14;
+    const kongCount = Object.values(E.hkKongs || {})
+      .filter(v => v === 'open' || v === 'closed')
+      .length;
+
+    // 沿用 editorFinish 已有的槓數檢查條件。
+    if (
+      extraTiles >= 0 &&
+      extraTiles <= 4 &&
+      kongCount !== extraTiles
+    ) {
+      add(
+        '第二步「槓／門清」：目前輸入' + E.all.length +
+        '張牌，須確認' + extraTiles +
+        '個槓；目前已標示' + kongCount + '個。'
+      );
+    }
+
+    if (typeof E.flags.menqing !== 'boolean') {
+      add('第二步「槓／門清」：尚未確認門清狀態。');
+    }
+
+    if (r?.needsSelect && E.hkWin == null) {
+      add(
+        '第三步「食糊」：不同食糊牌會影響番種，' +
+        '請指定最後食入／自摸的牌。'
+      );
+    }
+
+    if (!E.self && pending.length && E.hkWin == null) {
+      add(
+        '第三步「食糊」：一炮多響須指定共同放炮牌，' +
+        '請選擇與其他食糊者相同的牌。'
+      );
+    }
+  } else {
+    if (!noTiles && E.win == null) {
+      add('第三步「食糊」：尚未指定食糊牌，請點選最後食入／自摸的牌。');
+    }
+
+    if (!E.self && E.win === 34) {
+      add('第三步「食糊」：百搭不能作為放炮牌，請重新選擇。');
+    }
+  }
+
+  if (hasWild && busy) {
+    add('百搭最高番搜尋仍在進行中，完成後才可確認記錄。');
+  }
+
+  // 沒有明確錯誤時，不假定是牌數或牌型有錯。
+  if (!reasons.length) {
+    add(
+      hasWild
+        ? '目前尚未取得可記錄的計番結果。請先按「搜尋最高番」；' +
+          '若仍無法完成，再返回修改檢查選牌、明牌及食糊牌。'
+        : '目前尚未取得可記錄的計番結果。請按「返回修改」，' +
+          '檢查選牌數量、明牌組合及食糊牌後，再按確認番數。'
+    );
+  }
+
+  const currentTiles = physicalEntries().length;
+
+  return (
+    '<div class="warn" role="alert" aria-live="polite">' +
+      '<div style="font-weight:700;margin-bottom:6px">' +
+        '暫時無法確認記錄' +
+      '</div>' +
+
+      '<ul style="margin:0;padding-left:20px;line-height:1.6">' +
+        reasons.map(text =>
+          '<li>' + esc(text) + '</li>'
+        ).join('') +
+      '</ul>' +
+
+      '<div style="margin-top:8px;font-size:12px;opacity:.85">' +
+        '目前輸入：' + currentTiles + '張。' +
+        '可按下方「返回修改」處理上述項目。' +
+      '</div>' +
+    '</div>'
+  );
+}
+ 
 function editorPanelHtml(){
   if(E.mode==='pick')return palette();
   if(E.mode==='meld'||E.mode==='jmeld')return '<div class="editor-group-tools">'+(isHK()?hkGroupTools():ordinaryGroupTools())+'</div>';
@@ -2944,8 +3064,28 @@ function uShowGroups(t){uiGroupTile=t;uiGroups=[];if(isHK()){if(allCounts()[t]!=
  const valid=quick||!!(r&&!r.error&&(!hasWild||r.complete));
  const actions='<div class="btnrow">'+ub('返回修改','editorEdit')+ub('一炮多響','addWinner',(!valid||quick||E.self)?' disabled':'')+ub('確認記錄','confirm',!valid?' disabled':'','primary')+'</div>';
  if(quick&&uiReview==='quick'){const n=Math.max(1,Math.ceil(Object.keys(RL()).filter(id=>id!=='zimo').length/6));return {body:body+quickPanelHtml(),footer:uPagerSlot(uiQuickPage,n,'uiQuickPage')+'<div class="btnrow">'+ub('返回','uiReview','data-v="fans"')+ub('確認番數','uiReview','data-v="fans"','primary')+'</div>'};}
- if(!valid)return {body:body+'<p class="warn">'+esc(r?.error||'請先完成計番')+'</p>'+(hasWild?ub(wildBusy?'取消搜尋':'搜尋最高番',wildBusy?'wildStop':'wildRun','','primary')+'<p id="wild-progress">'+(wildBusy?'搜尋中，完成後才可記錄。':'')+'</p>':''),footer:uPagerSlot(0,1)+actions};
-const items=curItems(r),raw=Math.max(0,items.reduce((n,x)=>n+x.total,0)),total=isHK()?Math.min(raw,hkCap()):raw,h=document.querySelector('.u-content')?.clientHeight||Math.max(300,(window.visualViewport?.height||innerHeight)-165),w=document.querySelector('.u-content')?.clientWidth||innerWidth,columns=w>=520?3:2,rows=Math.max(2,Math.min(6,Math.floor((h-155)/58))),pageSize=rows*columns,n=Math.max(1,Math.ceil(items.length/pageSize));if(uiReview==='fans')uiPage=Math.max(0,Math.min(uiPage,n-1));let summary;
+if (!valid) {
+  const hintHtml = uiInvalidCalcHint(r, hasWild, wildBusy);
+
+  const searchHtml = hasWild
+    ? ub(
+        wildBusy ? '取消搜尋' : '搜尋最高番',
+        wildBusy ? 'wildStop' : 'wildRun',
+        '',
+        'primary'
+      ) +
+      '<p id="wild-progress" aria-live="polite">' +
+        (wildBusy ? '搜尋中，完成後才可記錄。' : '') +
+      '</p>'
+    : '';
+
+  return {
+    body: body + hintHtml + searchHtml,
+    footer: uPagerSlot(0, 1) + actions
+  };
+}
+                    
+                    const items=curItems(r),raw=Math.max(0,items.reduce((n,x)=>n+x.total,0)),total=isHK()?Math.min(raw,hkCap()):raw,h=document.querySelector('.u-content')?.clientHeight||Math.max(300,(window.visualViewport?.height||innerHeight)-165),w=document.querySelector('.u-content')?.clientWidth||innerWidth,columns=w>=520?3:2,rows=Math.max(2,Math.min(6,Math.floor((h-155)/58))),pageSize=rows*columns,n=Math.max(1,Math.ceil(items.length/pageSize));if(uiReview==='fans')uiPage=Math.max(0,Math.min(uiPage,n-1));let summary;
                     if(isHK())summary='合計 <b>'+total+'</b> 番';else{const groups=[];payRows(total).forEach(x=>{let g=groups.find(g=>g.fan===x.fan);if(!g){g={fan:x.fan,amount:x.amount,names:[]};groups.push(g);}g.names.push(nm(x.payer));});summary=groups.length?groups.map(g=>'<span>'+(E.self&&groups.length===1?'每家':g.names.join('、'))+'應付 <b>'+g.fan+'</b> 番 · <b>$'+g.amount+'</b></span>').join('<br>'):'合計 <b>'+total+'</b> 番';if(wildMult()>1)summary+='<small>已按本場規則乘 ×'+wildMult()+'</small>';}
  body+='<div class="u-total">'+summary+'</div><div class="u-review-tabs">'+[['fans','番種'],['pay','收付'],['adjust','特別改動'],['image','牌型圖']].map(([v,n])=>ub(n,'uiReview','data-v="'+v+'"',uiReview===v?'on':'')).join('')+'</div>';
 if(uiReview==='fans'){const page=items.slice(uiPage*pageSize,uiPage*pageSize+pageSize);body+='<div class="u-result-fans" style="display:grid;grid-template-columns:repeat('+columns+',minmax(0,1fr));grid-template-rows:repeat('+rows+',minmax(0,1fr));gap:6px;flex:1;min-height:0;overflow:auto;align-content:start">'+page.map(f=>'<div class="fan" style="min-width:0;min-height:52px;margin:0;padding:6px;border:1px solid var(--bd);border-radius:9px;background:var(--card);gap:5px"><label style="flex:1;min-width:0;font-size:13px;line-height:1.3;white-space:normal;overflow-wrap:anywhere">'+(f.id==='di'?'🔒 ':f.id==='adjust'?'✎ ':'<input type="checkbox" data-chg="excl" data-id="'+f.id+'" checked>')+esc(f.id==='di'?'底':f.name)+(f.n>1?' ×'+f.n:'')+'</label><b style="flex:none;font-size:15px">'+f.total+'</b></div>').join('')+Array(pageSize-page.length).fill('<div aria-hidden="true"></div>').join('')+'</div>';}
