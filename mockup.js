@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 if(!window.MJ){const a=document.getElementById('app');if(a)a.textContent='計番引擎未能載入，請確認 engine.js 已上傳。';return;}
-const APP_VERSION='2.0.0';
+const APP_VERSION='2.0.1';
 const DEV_IG='kevinli999';
 let M=window.MJ;
 const KEY='mj_v2_full_merge_1';
@@ -167,7 +167,7 @@ const newEntry=()=>({shapeDone:false,hkKongs:{},winner:null,self:true,disc:null,
 let _savedTab=null; try{ _savedTab=localStorage.getItem('mj_v2_full_tab'); }catch(e){}
 let E=newEntry(), pending=[], tab=(_savedTab && ['chooser','players','calc','table','history','settings'].includes(_savedTab) ? _savedTab : (S.game? 'table' : 'chooser')), wildPick=false;
 let inst={id:null,mode:'one',payee:null,payer:null,mult:1};
-let upd=null, updDismissed=false, checking=false, a2hsHidden=false, buildInfo=null, storyImg=null, ruleHelp=false, tblDraft='', fileInput=null;
+let upd=null, updDismissed=false, checking=false, lastUpdateCheck=0, a2hsHidden=false, buildInfo=null, storyImg=null, ruleHelp=false, tblDraft='', fileInput=null;
 const esc=s=>String(s).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 const seatOf=p=>S.seat.indexOf(p);
 const dealerPid=()=>S.seat[S.dealerSeat];
@@ -230,12 +230,12 @@ function isStandalone(){
 }
 function isSafariApple(){ try{ const ua=navigator.userAgent||''; return !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); }catch(e){ return true; } }
 function a2hsSteps(){
-  return '<ol class="steps-list"><li>'+(isSafariApple()?'用 <b>Safari</b> 打開本頁。':'建議改用 <b>Safari</b> 打開本頁(其他瀏覽器的選單位置可能不同)。')+'</li><li>點瀏覽器的<b>分享按鈕</b>(方框加向上箭頭 ⬆︎,在畫面底部或右上角)。</li><li>在選單中往下找,點<b>「加入主畫面」</b>。</li><li>按右上角<b>「加入」</b>,之後從主畫面圖示開啟即可。</li></ol><div class="hint">注意:主畫面 App 的資料與 Safari 是分開存放的。如果你已在 Safari 記錄過資料,請先到「設定 → 複製備份」,打開主畫面 App 後再用「貼上匯入」。</div>';
+  return '<ol class="steps-list"><li>'+(isSafariApple()?'請保持在 <b>Safari</b> 開啟本頁。':'先在分享選單選擇「在 Safari 中打開」，再開啟本頁。')+'</li><li>點 Safari 工具列的<b>分享按鈕</b>（方框向上箭頭 ⬆︎；工具列可能在畫面底部或頂部）。</li><li>在分享選單向下滑，點<b>「加入主畫面」</b>；若沒看到，向下捲動選單或點「編輯動作」尋找。</li><li>確認名稱後點右上角<b>「加入」</b>，再從 iPhone 主畫面圖示開啟。</li></ol><div class="hint">主畫面 App 與 Safari 的資料彼此獨立。若 Safari 已有牌局紀錄，請先到「設定 → 複製備份」，再於主畫面 App 用「貼上匯入」還原。</div>';
 }
 function a2hsBanner(){
   if(!isApple()||isStandalone()||a2hsHidden) return '';
   try{ if(localStorage.getItem(A2HS_KEY)) return ''; }catch(e){}
-  return '<div class="note"><b>建議加入主畫面</b><br>加入主畫面後會像一般 App 全螢幕運行,沒有網址列,也更穩定。'+a2hsSteps()+'<div class="btnrow"><button class="primary" data-act="a2hsLater">我知道了</button><button data-act="a2hsNever">不再提示</button></div></div>';
+  return '<div class="note"><b>將麻雀計番加入 iPhone／iPad 主畫面</b><div class="hint">在 Safari 點「分享」→「加入主畫面」，即可像 App 一樣全螢幕開啟。</div><div class="btnrow"><button class="primary" data-act="uiA2HSHowto">查看步驟</button><button data-act="a2hsLater">稍後</button><button data-act="a2hsNever">不再提示</button></div></div>';
 }
 
 function hex2rgb(h){ h=(h||'#000000').replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
@@ -402,7 +402,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.12';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.13';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
@@ -436,11 +436,12 @@ function meldGroup(m,i){
 }
 
 async function checkUpdate(manual){
-  if(checking) return; checking=true;
+  if(checking) return; checking=true; lastUpdateCheck=Date.now();
   try{
     const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('http');
     const j=await r.json();
+    if(!j||typeof j.version!=='string'||!j.version) throw new Error('invalid version metadata');
     if(j&&j.version) buildInfo=j.updated||null;
     if(j&&j.version&&j.version!==APP_VERSION){ upd=j; updDismissed=false; if(manual) toast('發現新版本 '+j.version); }
     else { upd=null; if(manual) toast('目前已是最新版本'); }
@@ -452,8 +453,9 @@ async function doUpgrade(){
   try{
     if('serviceWorker' in navigator){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); }
     if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
-    await Promise.all(['./','index.html','app.js','engine.js','engine2.js','mj-core.js','engine_hk.js','engine4.js','engine_wild.js','wild-worker.js','manifest.json','sw.js','version.json','icon-192.png','icon-512.png'].map(f=>fetch(f,{cache:'reload'}).catch(()=>{})));
-  }catch(e){}
+    const refreshed=await fetch('version.json?refresh='+Date.now(),{cache:'reload'});
+    if(!refreshed.ok) throw new Error('version refresh failed');
+  }catch(e){ toast('更新準備失敗，請確認網絡後重試'); return; }
   location.reload();
 }
 function mkTxns(ws,dealer,streak){
@@ -1787,7 +1789,7 @@ function base_render(){
   const el=document.getElementById('app');
   const editing=editorActive();document.body.classList.toggle('editor-open',editing);
   if(editing){el.innerHTML=editorHtml();window.scrollTo(0,0);fitEditor();return;}
-  if(!S.game||tab==='chooser'){ el.innerHTML='<div class="body">'+updBanner()+viewChooser()+'</div>'; window.scrollTo(0,0); return; }
+  if(!S.game||tab==='chooser'){ el.innerHTML='<div class="body">'+updBanner()+a2hsBanner()+viewChooser()+'</div>'; window.scrollTo(0,0); return; }
   if(!S.playersReady&&tab!=='players')openPlayerSetup();
   const views={players:viewPlayers,table:viewTable,calc:viewCalc,history:viewHistory,settle:viewSettle,settings:viewSettings};
   const tabs=[['table','牌桌'],['calc','算番'],['history','歷史'],['settle','結算'],['settings','設定']];
@@ -3139,7 +3141,8 @@ function uFrame(title,body,footer=''){
  const isTable=body.includes('class="u-board"'),isStart=['選擇遊戲','選擇玩法','開始新牌局','新牌局'].includes(title),canBack=!isTable&&!isStart&&S.playersReady===true&&S.game!=null,showDev=['選擇遊戲','選擇玩法','高級設置','高級設定'].includes(title),dev=showDev?uDeveloperInfo():'';
  const showNav=!isStart&&!uiWizard&&S.playersReady&&['table','calc','history','settle','settings','players'].includes(tab);
  const nav=showNav?'<nav class="u-main-nav" aria-label="主要導覽">'+[['table','牌桌'],['history','歷史／結算'],['settings','設定']].map(([v,n])=>ub(n,'tab','data-v="'+v+'" aria-current="'+(tab===v||(['history','settle'].includes(tab)&&v==='history')?'page':'false')+'"',tab===v||(['history','settle'].includes(tab)&&v==='history')?'on':'')).join('')+'</nav>':'';
- return '<div class="u-shell"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('⋯','uiMore','aria-label="更多牌局操作"')+'</header><main class="u-content">'+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
+ const prompts=updBanner()+(isStart?a2hsBanner():'');
+ return '<div class="u-shell"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('⋯','uiMore','aria-label="更多牌局操作"')+'</header><main class="u-content">'+prompts+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
 }
 function uOrigin(){return (S.cfg.tableOrigins||{})[pkey()]||{kind:'preset',name:isHK()?'廣東牌預設番表':PRESET_NAME[curPreset()]};}
 function uSetOrigin(kind,name){(S.cfg.tableOrigins||(S.cfg.tableOrigins={}))[pkey()]={kind,name};}
@@ -3375,7 +3378,8 @@ function render(){if(window.__UI_TEST__)return;derive();applyTheme();document.bo
 function uiAction(a,d){
  if(a==='close-panel'||a==='close')a='uiClose';
  if(tab==='calc'&&((a==='tab'&&d.v!=='calc')||['editorBack','uiBack','toChooser','newGame'].includes(a)))uiResume=uiCurrentLocation();
- if(['upgrade','checkUpd'].includes(a)){toast('請透過測試網站更新檔案');return true;}
+ if(a==='upgrade'){doUpgrade();return true;}
+ if(a==='checkUpd'){checkUpdate(true);return true;}
  if(a==='toChooser'||a==='newGame'){uiModal=null;setTab('chooser');return true;}
  if(a==='startWinner'&&(E.winner!=null||draftCache)){if(E.winner===+d.p){uiContinue();return true;}uPopup('有未完成輸入','<p>請先繼續或放棄目前輸入，再記錄另一手。</p>',ub('繼續輸入','uiContinue','','primary')+ub('放棄目前輸入','uiDiscard')+ub('取消','uiClose'));return true;}
 if (a === 'poolTap' && E.mode === 'meld' && +d.t !== 34) {
@@ -3427,6 +3431,7 @@ if (a === 'poolTap' && E.mode === 'meld' && +d.t !== 34) {
  switch(a){
    case 'uiRestoreDraft':if(applyDraft()){uiModal=null;setTab('calc');toast('已恢復未完成的輸入');}else{toast('未能恢復草稿，請返回牌桌後重試');}break;
  case 'uiClose':uiModal=null;break;
+ case 'uiA2HSHowto':uPopup('加入 iPhone／iPad 主畫面',a2hsSteps(),ub('完成','uiClose'));break;
  case 'uiContinue':uiContinue();break;
  case 'uiDiscard':if(confirm('放棄目前未完成輸入？')){E=newEntry();pending=[];entryStep='pick';uiResume=null;draftCache=null;clearDraft();uiModal=null;setTab('table');}break;
 case 'uiNav':case 'uiMore':uPopup('更多牌局操作','<div class="grid2">'+ub('新牌局','toChooser')+ub('本場規則','uiSetting','data-v="rules"')+ub('匯出備份','exportFile')+ub('還原上一場','restoreGame')+ub('撤銷上一筆','undoRec')+ub('分享結算','shareStory')+(uiCanResume()?ub('放棄未完成輸入','uiDiscard'):'')+'</div>');break;
@@ -3542,10 +3547,14 @@ function uiChange(k,el){const d=el.dataset,v=el.value;if(k==='uiName'){if(v.trim
 
 let _hasDraft = loadDraft();
 if(window.__UI_TEST__){window.__UI_CORE__={get:()=>S,set:x=>{S=norm(x);pickM();},entry:()=>E,setEntry:x=>{E=Object.assign(newEntry(),x);derive();},act,change:uiChange,mkTxns,applyHand,analyze,curItems,historyFinancials,validateCurrentEntry,finalizeFinancialSnapshots,uBlankValues,uApplySource,uOrigin,uImportPayload,uEntry,uResult,uWizardView,editorHtml,uTableLayout,uTableView,uTableFooter,modal:()=>uiModal,wizard:()=>uiWizard,resume:()=>uiResume,clearResume:()=>uiResume=null,location:()=>({tab,...uiCurrentLocation()}),capture:uiCaptureResume,canResume:uiCanResume,saveDraft,loadDraft,applyDraft};}else{if(_hasDraft){setTab('table');const who=Number.isInteger(draftCache.E.winner)?esc(S.names[draftCache.E.winner]):'未選擇玩家';const steps={pick:'輸入手牌',meld:'確認槓／明牌',jmeld:'確認百搭明牌',win:'確認食糊牌',flowers:'花牌',flags:'特殊情況'};uPopup('找到未完成的輸入','<div class="u-stack"><p>玩家：'+who+'</p><p>輸入進度：'+esc(steps[draftCache.E.mode]||'未完成輸入')+'</p><p>是否繼續剛才的輸入？返回牌桌仍會保留草稿。</p>'+ub('繼續輸入','uiRestoreDraft','','primary')+ub('返回牌桌，保留草稿','uiClose')+'</div>');}render();}
-
-
+if(!window.__UI_TEST__){
+  setTimeout(()=>checkUpdate(false),800);
+}
 
 window.addEventListener('pagehide',()=>saveDraft());
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveDraft();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')saveDraft();
+  else if(!window.__UI_TEST__&&Date.now()-lastUpdateCheck>15*60*1000)checkUpdate(false);
+});
 
 })();
