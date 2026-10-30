@@ -13,3 +13,10 @@
 @media(min-width:520px){.u-table-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-height:700px){:root{--ui-gap:6px}.u-header{min-height:46px}.u-content{padding:8px}.u-footer{padding:6px 8px;gap:4px}.u-footer .btnrow>button{min-height:44px;font-size:15px}.u-seat .u-avatar{font-size:23px}.u-seat b{font-size:22px}.u-winners button{min-height:76px}.u-flow{gap:8px}.u-dialog-body{padding:9px}.card{padding:8px}.u-total b{font-size:23px}.u-menu button{min-height:54px}.u-rule{padding:4px 6px}.u-table-fields{gap:5px;grid-auto-rows:minmax(52px,auto)}.u-table-toolbar{gap:5px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.u-shell{grid-template-rows:auto minmax(0,1fr) auto auto}
+.u-main-nav{display:flex;gap:6px;padding:5px 12px;border-top:1px solid var(--bd);background:var(--nav);z-index:10}
+.u-main-nav button{flex:1;min-width:0;min-height:42px;padding:6px 4px;font-size:14px}
+.u-payment-prompt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--acc);border-radius:10px;background:var(--card)}
+.u-payment-prompt span{font-size:13px;line-height:1.35}
+.u-payment-prompt button{flex:none;min-height:42px;padding:6px 10px}
+@media(max-height:700px){.u-main-nav{padding:3px 8px}.u-main-nav button{min-height:38px}.u-payment-prompt{padding:6px}.u-payment-prompt button{min-height:38px}}
