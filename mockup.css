@@ -31,3 +31,19 @@
 .u-editor.editor-special .editor-flags label{min-height:44px}
 .u-flags-count{width:100%;max-width:760px;margin:0 auto;font-size:13px;font-weight:600;color:var(--acc)}
 @media(max-width:420px){.u-image-review #shareCard{padding:8px 5px!important}.u-image-review #shareCard .u-share-set{padding:5px 1px 4px!important}.u-image-review #shareCard .u-share-set>div:first-child{padding:2px 0 5px!important}}
+.u-image-review #shareCard{padding:6px 6px 5px!important;margin:0 auto 4px!important}
+.u-image-review #shareCard>div:first-child{font-size:11px!important;line-height:1.2;margin-bottom:3px!important}
+.u-image-review #shareCard>div:nth-of-type(2){gap:4px!important;margin-top:2px!important}
+.u-image-review #shareCard>div:nth-of-type(2)>div{gap:3px!important}
+.u-image-review #shareCard>div:nth-of-type(2)>div>small{font-size:9px!important}
+.u-image-review #shareCard .u-share-set{gap:2px!important;padding:3px 1px 2px!important}
+.u-image-review #shareCard .u-share-set>div:first-child{padding:1px 0 3px!important}
+.u-image-review #shareCard .u-share-set .mt{width:min(16px,calc((100cqw - 6px)/var(--group-cols)))!important}
+.u-image-review #shareCard .u-share-set .mt b{font-size:clamp(8px,16cqw,10px)!important}
+.u-image-review #shareCard .u-share-set .mt i{font-size:7px!important}
+.u-image-review #shareCard>div[style*="font-size:36px"]{font-size:27px!important;line-height:1!important}
+.u-image-review #shareCard>div[style*="font-size:13px"]:not(:first-child){margin-top:4px!important;font-size:11px!important}
+.u-image-review #shareCard>div[style*="font-size:11px"]{font-size:9px!important;margin-top:3px!important}
+.u-image-review #shareCard>div[style*="font-size:12px"]{font-size:10px!important;margin-top:2px!important}
+.u-image-review #shareCard>div[style*="flex-wrap:wrap"][style*="font-size:clamp"]{font-size:clamp(9px,2.4vw,11px)!important;line-height:1.2!important;margin-top:3px!important}
+.u-image-review #shareCard .u-share-set>small{font-size:9px!important}
