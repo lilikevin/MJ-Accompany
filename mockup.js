@@ -402,7 +402,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.6';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.10';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
@@ -2455,50 +2455,35 @@ function cardGroups(res){
     .map((f, i) => f ? M.FLOWERS[i] : '')
     .filter(Boolean);
 
+  const meldCount =
+    E.melds.length + (isWild() ? E.wildGroups.length : 0);
+
   let groupsHtml;
 
   if (isHK()) {
     groupsHtml =
-      '<div style="display:flex;flex-wrap:wrap;justify-content:center">' +
-      gs.map(g =>
-        '<div style="display:inline-flex;flex-direction:column;align-items:center;margin:3px 4px">' +
-          '<div style="display:inline-flex;gap:1px;padding:6px 6px 9px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22)">' +
+      '<div class="u-share-groups" style="display:grid;gap:4px;align-items:stretch;margin-top:4px">' +
+      gs.map((g, i) =>
+        '<div class="u-share-set" style="--group-cols:' + Math.max(1, g.tiles.length) + ';min-width:0;container-type:inline-size;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px 1px 2px;border-radius:7px;background:rgba(255,255,255,.07)">' +
+          '<div style="display:flex;justify-content:center;align-items:center;gap:1px;max-width:100%;padding:1px 0 3px">' +
             shareTiles(g) +
           '</div>' +
-          '<small style="opacity:.8;margin-top:2px;font-size:11px">' +
-            esc(g.k) +
+          '<small class="u-share-label" style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">' +
+            (i < meldCount ? '明牌·' : '手牌·') + esc(g.k) +
           '</small>' +
         '</div>'
       ).join('') +
       '</div>';
   } else {
-    const meldCount =
-      E.melds.length + (isWild() ? E.wildGroups.length : 0);
-
-    const melds = gs.slice(0, meldCount);
-    const hands = gs.slice(meldCount);
-
-    const tileCount = arr =>
-      arr.reduce((n, g) => n + g.tiles.length, 0);
-
-    const leftWeight = Math.max(1, tileCount(melds));
-    const rightWeight = Math.max(1, tileCount(hands));
-
-    const ratio = Math.max(
-      0.6,
-      Math.min(1.67, Math.sqrt(leftWeight / rightWeight))
-    );
-
     const dense = Math.max(
-      Math.ceil(melds.length / 2),
-      Math.ceil(hands.length / 2),
+      Math.ceil(gs.length / 4),
       ...gs.map(g => Math.ceil(g.tiles.length / 7))
     ) >= 3;
 
     const tileMax = dense ? 18 : 22;
     const faceMax = dense ? 12 : 14;
 
-    const renderSet = (g, isMeld, single) => {
+    const renderSet = (g, isMeld) => {
       const closed =
         isMeld && String(g.k).includes('暗槓');
 
@@ -2531,29 +2516,16 @@ function cardGroups(res){
           'padding:7px 3px 5px;' +
           'border-radius:7px;' +
           'background:rgba(255,255,255,.07);' +
-          (single ? 'grid-column:1/-1;' : '') +
         '">' +
           '<div style="display:flex;justify-content:center;align-items:center;gap:1px;max-width:100%;padding:4px 0 8px">' +
             tiles +
           '</div>' +
-          '<small style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">' +
-            esc(g.k) +
+          '<small class="u-share-label" style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">' +
+            (isMeld ? '明牌·' : '手牌·') + esc(g.k) +
           '</small>' +
         '</div>'
       );
     };
-
-    const renderSide = (arr, label, isMeld) =>
-      '<div style="min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px">' +
-        '<small style="font-size:11px;opacity:.8">' +
-          label +
-        '</small>' +
-        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:stretch;min-width:0">' +
-          arr.map(g =>
-            renderSet(g, isMeld, arr.length === 1)
-          ).join('') +
-        '</div>' +
-      '</div>';
 
     groupsHtml =
       '<style>' +
@@ -2577,24 +2549,13 @@ function cardGroups(res){
           'height:16px;' +
         '}' +
       '</style>' +
-      '<div style="' +
+      '<div class="u-share-groups" style="' +
         'display:grid;' +
-        'grid-template-columns:' +
-          (
-            melds.length && hands.length
-              ? 'minmax(0,' + ratio.toFixed(3) + 'fr) minmax(0,1fr)'
-              : 'minmax(0,1fr)'
-          ) + ';' +
-        'gap:8px;' +
-        'align-items:center;' +
+        'gap:4px;' +
+        'align-items:stretch;' +
         'margin-top:4px;' +
       '">' +
-        (melds.length
-          ? renderSide(melds, '明牌／槓組', true)
-          : '') +
-        (hands.length
-          ? renderSide(hands, '手牌', false)
-          : '') +
+        gs.map((g, i) => renderSet(g, i < meldCount)).join('') +
       '</div>';
   }
 
@@ -3112,7 +3073,7 @@ function uFrame(title,body,footer=''){
  const isTable=body.includes('class="u-board"'),isStart=['選擇遊戲','選擇玩法','開始新牌局','新牌局'].includes(title),canBack=!isTable&&!isStart&&S.playersReady===true&&S.game!=null,showDev=['選擇遊戲','選擇玩法','高級設置','高級設定'].includes(title),dev=showDev?uDeveloperInfo():'';
  const showNav=!isStart&&!uiWizard&&S.playersReady&&['table','calc','history','settle','settings','players'].includes(tab);
  const nav=showNav?'<nav class="u-main-nav" aria-label="主要導覽">'+[['table','牌桌'],['history','歷史／結算'],['settings','設定']].map(([v,n])=>ub(n,'tab','data-v="'+v+'" aria-current="'+(tab===v||(['history','settle'].includes(tab)&&v==='history')?'page':'false')+'"',tab===v||(['history','settle'].includes(tab)&&v==='history')?'on':'')).join('')+'</nav>':'';
- return '<div class="u-shell"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('☰','uiNav','aria-label="切換畫面"')+'</header><main class="u-content">'+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
+ return '<div class="u-shell"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('⋯','uiMore','aria-label="更多牌局操作"')+'</header><main class="u-content">'+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
 }
 function uOrigin(){return (S.cfg.tableOrigins||{})[pkey()]||{kind:'preset',name:isHK()?'廣東牌預設番表':PRESET_NAME[curPreset()]};}
 function uSetOrigin(kind,name){(S.cfg.tableOrigins||(S.cfg.tableOrigins={}))[pkey()]={kind,name};}
@@ -3233,7 +3194,7 @@ function editorHtml() {
           playerLabel(E.winner) + ' ' +
           (E.self ? '自摸' : '食 ' + nm(E.disc)) +
         '</span>' +
-        ub('☰', 'uiNav', 'aria-label="切換畫面"') +
+        ub('⋯', 'uiMore', 'aria-label="更多牌局操作"') +
       '</header>' +
 
       '<div class="u-steps">' +
@@ -3402,8 +3363,7 @@ if (a === 'poolTap' && E.mode === 'meld' && +d.t !== 34) {
  case 'uiClose':uiModal=null;break;
  case 'uiContinue':uiContinue();break;
  case 'uiDiscard':if(confirm('放棄目前未完成輸入？')){E=newEntry();pending=[];entryStep='pick';uiResume=null;draftCache=null;clearDraft();uiModal=null;setTab('table');}break;
-case 'uiNav':uPopup('切換畫面','<div class="u-stack">'+ub('牌桌','tab','data-v="table"')+ub('歷史與結算','tab','data-v="history"')+ub('高級設置','tab','data-v="settings"')+'</div>',ub('牌局管理','uiMore'));break;
-case 'uiMore':uPopup('牌局管理','<div class="grid2">'+ub('新牌局','toChooser')+ub('本場規則','uiSetting','data-v="rules"')+ub('匯出備份','exportFile')+ub('還原上一場','restoreGame')+ub('撤銷上一筆','undoRec')+ub('分享結算','shareStory')+(uiCanResume()?ub('放棄未完成輸入','uiDiscard'):'')+'</div>');break;
+case 'uiNav':case 'uiMore':uPopup('更多牌局操作','<div class="grid2">'+ub('新牌局','toChooser')+ub('本場規則','uiSetting','data-v="rules"')+ub('匯出備份','exportFile')+ub('還原上一場','restoreGame')+ub('撤銷上一筆','undoRec')+ub('分享結算','shareStory')+(uiCanResume()?ub('放棄未完成輸入','uiDiscard'):'')+'</div>');break;
   case 'uiChoose':if(uiCanResume()&&!confirm('目前有未完成輸入，仍進入新牌局設定？'))break;uiModal=null;uiBackup={S:uc(S),E:uc(E),pending:uc(pending),tab,resume:uiResume};uiWizard={stage:'ask',custom:false,touched:false};S=norm(uc(S));S.game=d.v;pickM();uiPage=0;break;
 case 'uiDefault':uiWizard.custom=false;uiPage=0;act('uiSourceList',{v:'preset'});return true;
   case 'uiStage':if(d.stage==='cancel'){S=uiBackup.S;E=uiBackup.E;pending=uiBackup.pending;tab=uiBackup.tab;uiResume=uiBackup.resume;uiBackup=null;uiWizard=null;uiModal=null;pickM();break;}

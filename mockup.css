@@ -47,3 +47,6 @@
 .u-image-review #shareCard>div[style*="font-size:12px"]{font-size:10px!important;margin-top:2px!important}
 .u-image-review #shareCard>div[style*="flex-wrap:wrap"][style*="font-size:clamp"]{font-size:clamp(9px,2.4vw,11px)!important;line-height:1.2!important;margin-top:3px!important}
 .u-image-review #shareCard .u-share-set>small{font-size:9px!important}
+#shareCard .u-share-groups{grid-template-columns:repeat(4,minmax(0,1fr))}
+#shareCard .u-share-label{font-size:8px!important;white-space:nowrap}
+@media(max-width:360px){#shareCard .u-share-groups{grid-template-columns:repeat(3,minmax(0,1fr))}}
