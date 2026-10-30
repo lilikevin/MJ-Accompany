@@ -1983,8 +1983,46 @@ function resetGameData(){try{localStorage.setItem(PREV_KEY,JSON.stringify(S));}c
     case 'disc':if(pending.length&&+d.p!==pending[0].disc){toast('多響必須沿用同一位出銃者');return;}if(+d.p===E.winner||pending.some(w=>w.p===+d.p)){toast('出銃者不能是食糊者');return;}E.disc=+d.p;break;
     case 'self':if(pending.length&&d.v==='1'){toast('多響不能混入自摸');return;}E.self=d.v==='1';E.bao=null;if(E.self)E.disc=null;else if(E.disc==null)entryStep='payer';break;
     case 'flower': E.flowers[+d.i]=!E.flowers[+d.i]; break;
-    case 'mode': if(!isHK()&&['win','flowers','flags'].includes(d.v)&&['pick','meld','jmeld'].includes(E.mode)&&!quadReminder())break; E.mode=d.v; break;
-    case 'tile': {
+case 'mode': {
+  const target = d.v;
+
+  // 從第一步前往任何其他步驟，都必須先通過檢查。
+  if (E.mode === 'pick' && target !== 'pick') {
+    const issue = firstStepIssue();
+
+    if (issue) {
+      E.mode = 'pick';
+      editorError = issue.message;
+
+      uPopup(
+        issue.title,
+        '<p style="line-height:1.6">' +
+          esc(issue.message) +
+        '</p>',
+        ub('繼續選牌', 'uiClose', '', 'primary')
+      );
+
+      break;
+    }
+  }
+
+  // 保留原有槓牌提醒。
+  if (
+    !isHK() &&
+    ['win', 'flowers', 'flags'].includes(target) &&
+    ['pick', 'meld', 'jmeld'].includes(E.mode) &&
+    !quadReminder()
+  ) {
+    break;
+  }
+
+  // 通過檢查後才允許切換。
+  editorError = '';
+  E.mode = target;
+
+  break;
+}
+   case 'tile': {
       const t=+d.t;
       if(t===34){ if(jokerTotal()>=S.cfg.wildLimit){ toast('已達本場百搭上限'); return; } }
       else if(realTotal(t)>=4){ toast('這張牌已有4張'); flashOver(t); return; }
@@ -3388,7 +3426,7 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
  case 'uiGroup':{const g=uiGroups[+d.i];if(!g)break;if(isHK()){setHKKong(g.tile,g.open?'open':'closed');uiModal=null;break;}if(E.melds.length+E.wildGroups.length>=5){toast('最多五組明牌');break;}const c=allCounts(),marks=E.marks.slice();for(const t of g.physical){marks[t]++;if(marks[t]>c[t]){toast('未標記牌不足');return true;}}const lock=pending[0]?.ron?.winTile;if(lock!=null&&marks[lock]>=c[lock]){toast('共同放炮牌須留在手牌內');break;}E.marks=marks;if(g.t==='kong')E.kongOpen[g.tile]=g.open;(E.uGroups||(E.uGroups=[])).push({t:g.t,tile:g.tile,open:g.open});E.excl={};derive();uiModal=null;break;}
  case 'uiPrev':{const i=Math.max(0,['pick','meld','win','flowers','flags'].indexOf(E.mode==='jmeld'?'meld':E.mode));if(i)E.mode=['pick','meld','win','flowers','flags'][i-1];else entryStep='method';break;}
 
-   case 'uiNext': {
+ case 'uiNext': {
   const modes = ['pick', 'meld', 'win', 'flowers', 'flags'];
 
   const i = Math.max(
@@ -3396,10 +3434,12 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
     modes.indexOf(E.mode === 'jmeld' ? 'meld' : E.mode)
   );
 
+  // 第一步：不通過就立即停止，不進入第二步。
   if (i === 0) {
     const issue = firstStepIssue();
 
     if (issue) {
+      E.mode = 'pick';
       editorError = issue.message;
 
       uPopup(
@@ -3414,6 +3454,7 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
     }
   }
 
+  // 第二步：保留原有檢查。
   if (i === 1) {
     if (
       isHK() &&
@@ -3421,12 +3462,15 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
     ) {
       editorError = '請確認門清狀態';
       toast(editorError);
-      break;
+      return true;
     }
 
-    if (!isHK() && !quadReminder()) break;
+    if (!isHK() && !quadReminder()) {
+      return true;
+    }
   }
 
+  // 第三步：保留原有食糊牌檢查。
   if (
     i === 2 &&
     editorWin() == null &&
@@ -3434,19 +3478,21 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
   ) {
     editorError = '請指定食糊牌';
     toast(editorError);
-    break;
+    return true;
   }
 
+  // 第五步：交給原有完成輸入流程。
   if (i === 4) {
     act('editorFinish', {});
     return true;
   }
 
+  // 所有檢查通過後，才切換下一步。
   editorError = '';
   E.mode = modes[i + 1];
 
   break;
-}
+} 
   case 'uiAdjust':uPopup('手動調整',adjustUI(),ub('完成','uiClose'));break;
  case 'uiExtra':uPopup('補加番種','<select data-chg="addId"><option value="">選擇番種</option>'+fanList().filter(x=>x.id!=='di').map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select>',ub('完成','uiClose'));break;
  case 'uiExcluded':uPopup('恢復番種',Object.keys(E.excl).filter(k=>E.excl[k]).map(k=>ub(esc(RL()[k]?.name||k),'unexcl','data-id="'+k+'"')).join('')||'<p>沒有取消的番種。</p>',ub('完成','uiClose'));break;
