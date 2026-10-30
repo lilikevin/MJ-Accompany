@@ -20,3 +20,14 @@
 .u-payment-prompt span{font-size:13px;line-height:1.35}
 .u-payment-prompt button{flex:none;min-height:42px;padding:6px 10px}
 @media(max-height:700px){.u-main-nav{padding:3px 8px}.u-main-nav button{min-height:38px}.u-payment-prompt{padding:6px}.u-payment-prompt button{min-height:38px}}
+.u-shell>.u-footer{grid-row:3}
+.u-shell>.u-main-nav{grid-row:4}
+.u-image-review{flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain}
+.u-image-review #shareCard{width:100%;margin:0 auto 8px!important;padding:clamp(8px,2.5vw,14px) 8px!important}
+.u-image-review .hint{display:block;padding:0 2px}
+.u-editor.editor-special .editor-live,.u-editor.editor-special .editor-pile,.u-editor.editor-special .editor-tools{display:none!important}
+.u-editor.editor-special .editor-panel{justify-content:flex-start;align-items:stretch;overflow:auto}
+.u-editor.editor-special .u-flags{max-width:760px;flex:1;min-height:0;margin:0 auto;grid-template-rows:repeat(var(--flag-rows),minmax(44px,1fr));align-content:stretch}
+.u-editor.editor-special .editor-flags label{min-height:44px}
+.u-flags-count{width:100%;max-width:760px;margin:0 auto;font-size:13px;font-weight:600;color:var(--acc)}
+@media(max-width:420px){.u-image-review #shareCard{padding:8px 5px!important}.u-image-review #shareCard .u-share-set{padding:5px 1px 4px!important}.u-image-review #shareCard .u-share-set>div:first-child{padding:2px 0 5px!important}}
