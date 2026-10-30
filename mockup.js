@@ -402,7 +402,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.10';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.12';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
@@ -2402,6 +2402,65 @@ function layoutTiles(tiles,nSets){
   gs.push({k:'眼',tiles:[D.pair,D.pair]});
   return gs;
 }
+function specialCardGroups(tiles,winTile,kind){
+  const counts=Array(34).fill(0);
+  tiles.forEach(t=>{if(t<34)counts[t]++;});
+  const groups=[];
+  const add=(label,tileList,cols)=>{
+    const win=tileList.indexOf(winTile);
+    groups.push({k:label,tiles:tileList.slice(),wild:tileList.map(()=>false),win,cols});
+  };
+  if(['shiliubuda','budafei','busanxf','budazalong'].includes(kind)){
+    const pair=counts.findIndex(n=>n===2);
+    const names=['萬子','筒子','索子','字牌'];
+    for(let suit=0;suit<4;suit++){
+      const start=suit===3?27:suit*9,end=suit===3?34:start+9;
+      const tilesInGroup=[];
+      for(let t=start;t<end;t++)for(let n=0;n<counts[t];n++)tilesInGroup.push(t);
+      if(tilesInGroup.length)add(names[suit]+(tilesInGroup.includes(pair)?'·眼':''),tilesInGroup,suit===3?4:null);
+    }
+    return groups;
+  }
+  if(kind==='shisanyao'){
+    const yao=[0,8,9,17,18,26,27,28,29,30,31,32,33];
+    const isYaoPair=rest=>{
+      let total=0,pairs=0;
+      for(let t=0;t<34;t++){
+        const n=rest[t];
+        if(yao.includes(t)){
+          if(n!==1&&n!==2)return false;
+          if(n===2)pairs++;
+          total+=n;
+        }else if(n)return false;
+      }
+      return total===14&&pairs===1;
+    };
+    let extra=null,base=null;
+    for(let t=0;t<34&&!extra;t++){
+      if(counts[t]>=3){
+        const rest=counts.slice();rest[t]-=3;
+        if(isYaoPair(rest)){extra={k:'加坎·刻子',tiles:[t,t,t]};base=rest;}
+      }
+      if(t<27&&t%9<=6&&counts[t]&&counts[t+1]&&counts[t+2]){
+        const rest=counts.slice();rest[t]--;rest[t+1]--;rest[t+2]--;
+        if(isYaoPair(rest)){extra={k:'加坎·順子',tiles:[t,t+1,t+2]};base=rest;}
+      }
+    }
+    if(base){
+      const names=['一九萬','一九筒','一九索','字牌'];
+      for(let suit=0;suit<4;suit++){
+        const start=suit===3?27:suit*9,end=suit===3?34:start+9;
+        const list=[];
+        for(let t=start;t<end;t++)for(let n=0;n<base[t];n++)list.push(t);
+        if(list.length)add(names[suit]+(list.some(t=>base[t]===2)?'·眼':''),list,suit===3?4:null);
+      }
+      const win=extra.tiles.indexOf(winTile);
+      groups.push(Object.assign(extra,{wild:extra.tiles.map(()=>false),win}));
+      return groups;
+    }
+  }
+  return null;
+}
 function cardGroups(res){
   const out=[]; const mk=(k,tiles,wild)=>({k,tiles,wild:wild||tiles.map(()=>false),win:-1});
   const mtiles=m=>m.t==='chow'?[m.tile,m.tile+1,m.tile+2]:Array(m.t==='kong'?4:3).fill(m.tile);
@@ -2427,6 +2486,11 @@ function cardGroups(res){
     hand=hand.map(t=>{ if(t!==34) return t; if(!rep.length) return t; const r=rep.shift(); wb[r]=(wb[r]||0)+1; return r; });
   }
   const conc=hand.concat(winTile==null?[]:[winTile]);
+  const specialId=(res.items||[]).find(i=>['shisanyao','shiliubuda','budafei','busanxf','budazalong'].includes(i.id))?.id;
+  if(specialId&&!E.melds.length&&!isWild()){
+    const specialGroups=specialCardGroups(conc,winTile,specialId);
+    if(specialGroups)return out.concat(specialGroups);
+  }
   const nSets=5-E.melds.length-(isWild()?E.wildGroups.length:0);
   const gs=special?null:layoutTiles(conc,nSets);
   const cg=gs?gs:[mk('牌型',conc.slice().sort((a,b)=>a-b))];
@@ -2436,7 +2500,7 @@ function cardGroups(res){
   if(!placed&&winTile!=null){ for(const g of cg){ const i=g.tiles.indexOf(winTile); if(i>=0){ g.win=i; break; } } }
   return out.concat(cg);
 }
- function shareTiles(g){const mk=(t,i)=>cardTile(t,{wild:g.wild[i],win:g.win===i}),n=g.tiles.length;if(n<=7)return g.tiles.map(mk).join('');const rows=Math.ceil(n/7),per=Math.ceil(n/rows);let h='<div style="display:flex;flex-direction:column;gap:4px;align-items:center">';for(let r=0;r<rows;r++){const a=r*per;h+='<div style="display:flex;gap:1px">'+g.tiles.slice(a,a+per).map((t,i)=>mk(t,a+i)).join('')+'</div>';}return h+'</div>';}
+ function shareTiles(g){const mk=(t,i)=>cardTile(t,{wild:g.wild[i],win:g.win===i}),n=g.tiles.length,cols=Math.min(n,g.cols||7);if(n<=cols)return g.tiles.map(mk).join('');const rows=Math.ceil(n/cols),per=Math.ceil(n/rows);let h='<div style="display:flex;flex-direction:column;gap:4px;align-items:center">';for(let r=0;r<rows;r++){const a=r*per;h+='<div style="display:flex;gap:1px">'+g.tiles.slice(a,a+per).map((t,i)=>mk(t,a+i)).join('')+'</div>';}return h+'</div>';}
 
  function shareCard(res, total, raw) {
   if (!res || res.error) return '';
@@ -2456,7 +2520,9 @@ function cardGroups(res){
     .filter(Boolean);
 
   const meldCount =
-    E.melds.length + (isWild() ? E.wildGroups.length : 0);
+    isHK()
+      ? (res.kongs || []).length
+      : E.melds.length + (isWild() ? E.wildGroups.length : 0);
 
   let groupsHtml;
 
@@ -2464,33 +2530,33 @@ function cardGroups(res){
     groupsHtml =
       '<div class="u-share-groups" style="display:grid;gap:4px;align-items:stretch;margin-top:4px">' +
       gs.map((g, i) =>
-        '<div class="u-share-set" style="--group-cols:' + Math.max(1, g.tiles.length) + ';min-width:0;container-type:inline-size;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px 1px 2px;border-radius:7px;background:rgba(255,255,255,.07)">' +
+        '<div class="u-share-set" style="--group-cols:' + Math.max(1, g.cols || g.tiles.length) + ';min-width:0;container-type:inline-size;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px 1px 2px;border-radius:7px;background:rgba(255,255,255,.07)">' +
           '<div style="display:flex;justify-content:center;align-items:center;gap:1px;max-width:100%;padding:1px 0 3px">' +
             shareTiles(g) +
           '</div>' +
           '<small class="u-share-label" style="font-size:10px;line-height:1.2;opacity:.8;overflow-wrap:anywhere">' +
-            (i < meldCount ? '明牌·' : '手牌·') + esc(g.k) +
+            (i < meldCount ? (isHK() ? '槓組·' : '明牌·') : '手牌·') + esc(g.k) +
           '</small>' +
         '</div>'
       ).join('') +
       '</div>';
   } else {
     const dense = Math.max(
-      Math.ceil(gs.length / 4),
+      Math.ceil(gs.length / 3),
       ...gs.map(g => Math.ceil(g.tiles.length / 7))
     ) >= 3;
 
-    const tileMax = dense ? 18 : 22;
-    const faceMax = dense ? 12 : 14;
+    const tileMax = dense ? 24 : 28;
+    const faceMax = dense ? 14 : 16;
 
     const renderSet = (g, isMeld) => {
       const closed =
         isMeld && String(g.k).includes('暗槓');
 
       const count = g.tiles.length;
-      const cols = count <= 7
+      const cols = g.cols || (count <= 7
         ? Math.max(1, count)
-        : Math.ceil(count / Math.ceil(count / 7));
+        : Math.ceil(count / Math.ceil(count / 7)));
 
       const tiles = closed
         ? g.tiles.map((t, i) =>
