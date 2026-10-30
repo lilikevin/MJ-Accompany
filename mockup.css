@@ -20,6 +20,8 @@
 .u-payment-prompt span{font-size:13px;line-height:1.35}
 .u-payment-prompt button{flex:none;min-height:42px;padding:6px 10px}
 @media(max-height:700px){.u-main-nav{padding:3px 8px}.u-main-nav button{min-height:38px}.u-payment-prompt{padding:6px}.u-payment-prompt button{min-height:38px}}
+#app{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden}
+.u-shell{height:100%}
 .u-shell>.u-footer{grid-row:3}
 .u-shell>.u-main-nav{grid-row:4}
 .u-image-review{flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain}
