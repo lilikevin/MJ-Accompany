@@ -612,6 +612,194 @@ function analyze(){
   if(E.win==null||E.hand.length!==need()-1) return null;
   return M.analyze(Object.assign({hand:E.hand.concat([E.win]),melds:E.melds,win:E.win,flowers:E.flowers,selfDraw:E.self,flags:E.flags},ctxExtra()),OV());
 }
+
+ function firstStepIssue() {
+  const hk = isHK();
+  const required = hk ? 14 : 17;
+
+  const tiles = physicalEntries().map(x => x.t);
+  const current = tiles.length;
+
+  // 所有模式都先檢查最低張數。
+  if (current < required) {
+    return {
+      title: '牌數不足',
+      message:
+        '此玩法至少需要' + required +
+        '張，目前只有' + current +
+        '張，還差' + (required - current) +
+        '張。請補選牌後再繼續。'
+    };
+  }
+
+  // 有百搭牌：不做牌型預檢，保留後續原有流程。
+  if (isWild() && jokerTotal() > 0) return null;
+
+  // 廣東牌沿用現有分析器。
+  // 暫時忽略尚未完成或之前留下的槓／食糊牌選擇。
+  if (hk) {
+    const oldKongs = E.hkKongs;
+    const oldWin = E.hkWin;
+
+    let result;
+
+    try {
+      E.hkKongs = {};
+      E.hkWin = null;
+      result = analyzeHK();
+    } catch (err) {
+      return {
+        title: '暫時無法檢查牌型',
+        message:
+          '牌型檢查發生錯誤，請稍後再試。' +
+          (err?.message ? '（' + err.message + '）' : '')
+      };
+    } finally {
+      E.hkKongs = oldKongs;
+      E.hkWin = oldWin;
+    }
+
+    if (!result || result.error) {
+      return {
+        title: '請檢查選牌',
+        message:
+          (result?.error || '目前未能確認合法和牌牌型') +
+          '。請檢查選牌後再繼續。'
+      };
+    }
+
+    return null;
+  }
+
+  // 非廣東牌、沒有百搭：
+  // 忽略目前的明牌標記，從全部實體牌檢查是否存在合法完成方式。
+  const counts = Array(35).fill(0);
+
+  for (const t of tiles) counts[t]++;
+
+  for (let t = 0; t < 34; t++) {
+    if (counts[t] > 4) {
+      return {
+        title: '同款牌數過多',
+        message:
+          tileName(t) + '目前有' + counts[t] +
+          '張，同款牌不能超過4張。請檢查選牌。'
+      };
+    }
+  }
+
+  const kongCount = current - required;
+
+  if (kongCount > 5) {
+    return {
+      title: '牌數過多',
+      message:
+        '目前輸入' + current +
+        '張，已超出此17張玩法含五個槓的張數範圍。請檢查選牌。'
+    };
+  }
+
+  const quadTiles = [];
+
+  for (let t = 0; t < 34; t++) {
+    if (counts[t] === 4) quadTiles.push(t);
+  }
+
+  if (kongCount > quadTiles.length) {
+    return {
+      title: '牌數與槓組不符',
+      message:
+        '目前輸入' + current +
+        '張，需要' + kongCount +
+        '個槓，但只有' + quadTiles.length +
+        '款牌各有4張。請檢查是否多選或選錯牌。'
+    };
+  }
+
+  const kongChoices =
+    kongCount === 0 ? [[]] : combos(quadTiles, kongCount);
+
+  let completedChecks = 0;
+  let failedChecks = 0;
+
+  // 百搭模式但實際沒有百搭牌時，
+  // 保留該模式需要的 preset、limit 等輸入設定。
+  const baseInput = isWild()
+    ? wildInput()
+    : Object.assign({
+        flowers: E.flowers,
+        selfDraw: E.self,
+        flags: E.flags
+      }, ctxExtra());
+
+  const over = OV();
+
+  for (const selected of kongChoices) {
+    const left = counts.slice();
+
+    const melds = selected.map(t => ({
+      t: 'kong',
+      tile: t,
+      open: false
+    }));
+
+    const groups = selected.map(t => ({
+      t: 'kong',
+      tile: t,
+      open: false,
+      physical: [t, t, t, t]
+    }));
+
+    for (const t of selected) left[t] -= 4;
+
+    const hand = [];
+
+    for (let t = 0; t < 34; t++) {
+      for (let n = 0; n < left[t]; n++) hand.push(t);
+    }
+
+    // 第一步未選食糊牌，逐款嘗試。
+    // hand 保留完整牌數，與現有 analyze() 的輸入方式一致。
+    for (const win of new Set(hand)) {
+      try {
+        const result = M.analyze(
+          Object.assign({}, baseInput, {
+            hand: hand.slice(),
+            melds,
+            groups,
+            win
+          }),
+          over
+        );
+
+        completedChecks++;
+
+        if (result && !result.error) return null;
+      } catch (err) {
+        failedChecks++;
+      }
+    }
+  }
+
+  // 分析器有拋錯，不能把未完成的檢查當成「確定無解」。
+  if (failedChecks > 0) {
+    return {
+      title: '暫時無法完成牌型檢查',
+      message:
+        '部分牌型檢查發生錯誤，未能確認是否可以和牌。' +
+        '請檢查計番引擎或稍後再試。'
+    };
+  }
+
+  return {
+    title: '目前選牌無法和牌',
+    message:
+      completedChecks > 0
+        ? '目前選牌未能組成此玩法支援的和牌類型。' +
+          '請檢查是否選錯、漏選或重複選牌，再按下一步。'
+        : '目前牌數或槓組無法形成可檢查的完整牌型，請檢查選牌。'
+  };
+}
 function curItems(res){
   const r=RL(); let it;
   if(E.quick&&isHK()){ it=Object.keys(E.quick).filter(id=>E.quick[id]>0&&id!=='zimo'&&r[id]).map(id=>({id,n:E.quick[id],closed:false})).filter(x=>!E.excl[x.id]); if(E.self&&r.zimo&&!E.excl.zimo) it.unshift({id:'zimo',n:1,closed:false}); }
@@ -3199,8 +3387,67 @@ case 'uiPlayer':uPopup(S.names[+d.p],'<div class="u-stack">'+(uiCanResume()?ub('
  case 'uiHKKong':uPopup('槓組',ub('取消槓','hkKong','data-t="'+d.t+'" data-v="none"')+ub('切換明／暗槓','hkKong','data-t="'+d.t+'" data-v="'+(E.hkKongs[d.t]==='open'?'closed':'open')+'"'),ub('完成','uiClose'));break;
  case 'uiGroup':{const g=uiGroups[+d.i];if(!g)break;if(isHK()){setHKKong(g.tile,g.open?'open':'closed');uiModal=null;break;}if(E.melds.length+E.wildGroups.length>=5){toast('最多五組明牌');break;}const c=allCounts(),marks=E.marks.slice();for(const t of g.physical){marks[t]++;if(marks[t]>c[t]){toast('未標記牌不足');return true;}}const lock=pending[0]?.ron?.winTile;if(lock!=null&&marks[lock]>=c[lock]){toast('共同放炮牌須留在手牌內');break;}E.marks=marks;if(g.t==='kong')E.kongOpen[g.tile]=g.open;(E.uGroups||(E.uGroups=[])).push({t:g.t,tile:g.tile,open:g.open});E.excl={};derive();uiModal=null;break;}
  case 'uiPrev':{const i=Math.max(0,['pick','meld','win','flowers','flags'].indexOf(E.mode==='jmeld'?'meld':E.mode));if(i)E.mode=['pick','meld','win','flowers','flags'][i-1];else entryStep='method';break;}
- case 'uiNext':{const i=Math.max(0,['pick','meld','win','flowers','flags'].indexOf(E.mode==='jmeld'?'meld':E.mode));if(!i&&!E.all.length&&!E.wildGroups.length){toast('請先輸入牌');break;}if(i===1){if(isHK()&&typeof E.flags.menqing!=='boolean'){toast('請確認門清狀態');break;}if(!isHK()&&!quadReminder())break;}if(i===2&&editorWin()==null&&(!isHK()||pending.length)){toast('請指定食糊牌');break;}if(i===4){act('editorFinish',{});return true;}E.mode=['pick','meld','win','flowers','flags'][i+1];break;}
- case 'uiAdjust':uPopup('手動調整',adjustUI(),ub('完成','uiClose'));break;
+
+   case 'uiNext': {
+  const modes = ['pick', 'meld', 'win', 'flowers', 'flags'];
+
+  const i = Math.max(
+    0,
+    modes.indexOf(E.mode === 'jmeld' ? 'meld' : E.mode)
+  );
+
+  if (i === 0) {
+    const issue = firstStepIssue();
+
+    if (issue) {
+      editorError = issue.message;
+
+      uPopup(
+        issue.title,
+        '<p style="line-height:1.6">' +
+          esc(issue.message) +
+        '</p>',
+        ub('繼續選牌', 'uiClose', '', 'primary')
+      );
+
+      return true;
+    }
+  }
+
+  if (i === 1) {
+    if (
+      isHK() &&
+      typeof E.flags.menqing !== 'boolean'
+    ) {
+      editorError = '請確認門清狀態';
+      toast(editorError);
+      break;
+    }
+
+    if (!isHK() && !quadReminder()) break;
+  }
+
+  if (
+    i === 2 &&
+    editorWin() == null &&
+    (!isHK() || pending.length)
+  ) {
+    editorError = '請指定食糊牌';
+    toast(editorError);
+    break;
+  }
+
+  if (i === 4) {
+    act('editorFinish', {});
+    return true;
+  }
+
+  editorError = '';
+  E.mode = modes[i + 1];
+
+  break;
+}
+  case 'uiAdjust':uPopup('手動調整',adjustUI(),ub('完成','uiClose'));break;
  case 'uiExtra':uPopup('補加番種','<select data-chg="addId"><option value="">選擇番種</option>'+fanList().filter(x=>x.id!=='di').map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select>',ub('完成','uiClose'));break;
  case 'uiExcluded':uPopup('恢復番種',Object.keys(E.excl).filter(k=>E.excl[k]).map(k=>ub(esc(RL()[k]?.name||k),'unexcl','data-id="'+k+'"')).join('')||'<p>沒有取消的番種。</p>',ub('完成','uiClose'));break;
  case 'uiBao':uPopup('包牌','<label>包牌者<select data-chg="bao"><option value="">無</option>'+S.seat.filter(p=>p!==E.winner).map(p=>'<option value="'+p+'"'+(E.bao===p?' selected':'')+'>'+nm(p)+'</option>').join('')+'</select></label>',ub('完成','uiClose'));break;
