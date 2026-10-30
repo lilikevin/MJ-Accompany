@@ -2973,7 +2973,47 @@ function uiAction(a,d){
  if(['upgrade','checkUpd'].includes(a)){toast('請透過測試網站更新檔案');return true;}
  if(a==='toChooser'||a==='newGame'){uiModal=null;setTab('chooser');return true;}
  if(a==='startWinner'&&(E.winner!=null||draftCache)){if(E.winner===+d.p){uiContinue();return true;}uPopup('有未完成輸入','<p>請先繼續或放棄目前輸入，再記錄另一手。</p>',ub('繼續輸入','uiContinue','','primary')+ub('放棄目前輸入','uiDiscard')+ub('取消','uiClose'));return true;}
- if(a==='poolTap'&&E.mode==='meld'&&+d.t!==34){if(!isHK()&&(E.marks[+d.t]||0)>0){uPopup('已標示明牌',ordinaryGroupTools());return true;}uiGroupPage=0;uShowGroups(+d.t);return true;}
+if (a === 'poolTap' && E.mode === 'meld' && +d.t !== 34) {
+  const t = +d.t;
+
+  if (!isHK()) {
+    const free = allCounts().map(
+      (n, tile) => n - (E.marks[tile] || 0)
+    );
+
+    let canAdd = free[t] >= 3;
+
+    if (!canAdd && t < 27) {
+      const suitStart = Math.floor(t / 9) * 9;
+
+      for (
+        let n = Math.max(0, t % 9 - 2);
+        n <= Math.min(6, t % 9);
+        n++
+      ) {
+        const start = suitStart + n;
+
+        if (
+          free[start] > 0 &&
+          free[start + 1] > 0 &&
+          free[start + 2] > 0
+        ) {
+          canAdd = true;
+          break;
+        }
+      }
+    }
+
+    if (!canAdd && (E.marks[t] || 0) > 0) {
+      uPopup('已標示明牌', ordinaryGroupTools());
+      return true;
+    }
+  }
+
+  uiGroupPage = 0;
+  uShowGroups(t);
+  return true;
+}
  if(a==='tab'){uiModal=null;if(d.v!=='calc')uiPage=0;if(d.v==='history')uiHistory=-1;}
  if(['choosePayer','chooseMethod','instSave','rmMeld','wildRemoveGroup','kongToggle','editOpen','payAll','payoff'].includes(a))uiModal=null;
  if(a==='quickStart')uiReview='quick';if(a==='editorFinish'){uiReview='fans';uiPage=0;}if(a==='confirm')uiHistory=-1;
