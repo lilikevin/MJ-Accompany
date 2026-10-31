@@ -21,7 +21,7 @@
 .u-payment-prompt span{font-size:13px;line-height:1.35}
 .u-payment-prompt button{flex:none;min-height:42px;padding:6px 10px}
 @media(max-height:700px){.u-shell.has-nav{padding-bottom:calc(48px + var(--safe-bottom))}.u-main-nav{min-height:calc(48px + var(--safe-bottom));padding:3px 8px calc(3px + var(--safe-bottom))}.u-main-nav button{min-height:38px}.u-payment-prompt{padding:6px}.u-payment-prompt button{min-height:38px}}
-#app{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden}
+#app{position:relative;width:100%;height:100%;min-height:100%;overflow:hidden}
 .u-shell{height:100%}
 .u-rule:not(:has(.grid2)){display:grid;grid-template-columns:minmax(0,1fr) minmax(64px,76px);align-items:center;gap:4px;padding:5px 7px}
 .u-rule:not(:has(.grid2))>span{min-height:0!important;line-height:1.25}
