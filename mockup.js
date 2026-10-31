@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 if(!window.MJ){const a=document.getElementById('app');if(a)a.textContent='計番引擎未能載入，請確認 engine.js 已上傳。';return;}
-const APP_VERSION='2.0.6';
+const APP_VERSION='2.0.7';
 const DEV_IG='kevinli999';
 let M=window.MJ;
 const KEY='mj_v2_full_merge_1';
@@ -402,7 +402,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.18';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.19';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
@@ -3143,7 +3143,7 @@ function uFrame(title,body,footer=''){
  const showNav=!isStart&&!uiWizard&&S.playersReady&&['table','calc','history','settle','settings','players'].includes(tab);
  const nav=showNav?'<nav class="u-main-nav" aria-label="主要導覽">'+[['table','牌桌'],['history','歷史／結算'],['settings','設定']].map(([v,n])=>ub(n,'tab','data-v="'+v+'" aria-current="'+(tab===v||(['history','settle'].includes(tab)&&v==='history')?'page':'false')+'"',tab===v||(['history','settle'].includes(tab)&&v==='history')?'on':'')).join('')+'</nav>':'';
  const prompts=updBanner()+(isStart?a2hsBanner():'');
- return '<div class="u-shell"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('⋯','uiMore','aria-label="更多牌局操作"')+'</header><main class="u-content">'+prompts+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
+ return '<div class="u-shell'+(showNav?' has-nav':'')+'"><header class="u-header">'+(canBack?ub('‹','uiBack','aria-label="返回"'):'')+'<h3>'+esc(title)+'</h3>'+ub('⋯','uiMore','aria-label="更多牌局操作"')+'</header><main class="u-content">'+prompts+body+'</main><footer class="u-footer">'+footer+dev+'</footer>'+nav+'</div>';
 }
 function uOrigin(){return (S.cfg.tableOrigins||{})[pkey()]||{kind:'preset',name:isHK()?'廣東牌預設番表':PRESET_NAME[curPreset()]};}
 function uSetOrigin(kind,name){(S.cfg.tableOrigins||(S.cfg.tableOrigins={}))[pkey()]={kind,name};}
