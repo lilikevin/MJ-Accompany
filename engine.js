@@ -37,25 +37,40 @@ function isShisan(cnt){
   }
   return false;
 }
-function budaInfo(cnt){
+
+
+function budaInfo(cnt, flags){
+  const mode = (flags&&flags.budaMode) || (typeof M!=='undefined'&&M.BUDA_MODE) || (typeof self!=='undefined'&&self.BUDA_MODE) || 'strict';
+  const minGap = mode==='loose' ? 2 : 3;
   let dbl=0,tot=0; const sets=[];
   for(let t=27;t<34;t++){ if(cnt[t]<1||cnt[t]>2) return null; if(cnt[t]===2) dbl++; tot+=cnt[t]; }
   for(let su=0;su<3;su++){
     const ns=[];
     for(let n=1;n<=9;n++){ const c=cnt[su*9+n-1]; if(c>2) return null; if(c>=1){ ns.push(n); if(c===2) dbl++; tot+=c; } }
-    if(ns.length!==3) return null;
-    for(let i=0;i<3;i++) for(let j=i+1;j<3;j++) if(ns[j]-ns[i]<3) return null;
+    if(ns.length<1) return null;
+    if(mode==='strict' && ns.length!==3) return null;
+    for(let i=0;i<ns.length;i++) for(let j=i+1;j<ns.length;j++) if(ns[j]-ns[i] < minGap) return null;
     sets.push(ns);
   }
   if(!(dbl===1&&tot===17)) return null;
-  const key=a=>a.join(',');
-  const cls=a=>a[0]%3;
-  const dragon=['1,4,7','2,5,8','3,6,9'];
-  const keys=sets.map(key);
-  const isLong=keys.every(k=>dragon.indexOf(k)>=0)&&new Set(keys).size===3;
-  const isFeng=new Set(keys).size===1;
-  return {sets,isLong,isFeng};
+  const keys=sets.map(a=>a.join(','));
+  return {sets, isLong: keys.every(k=>['1,4,7','2,5,8','3,6,9'].includes(k)) && new Set(keys).size===3, isFeng: new Set(keys).size===1 };
 }
+function isBuda(cnt, flags){
+  const mode = (flags&&flags.budaMode) || (typeof M!=='undefined'&&M.BUDA_MODE) || (typeof self!=='undefined'&&self.BUDA_MODE) || 'strict';
+  const minGap = mode==='loose' ? 2 : 3;
+  let dbl=0,tot=0;
+  for(let t=27;t<34;t++){ if(cnt[t]<1||cnt[t]>2) return false; if(cnt[t]===2) dbl++; tot+=cnt[t]; }
+  for(let su=0;su<3;su++){
+    const ns=[];
+    for(let n=1;n<=9;n++){ const c=cnt[su*9+n-1]; if(c>2) return false; if(c>=1){ ns.push(n); if(c===2) dbl++; tot+=c; } }
+    if(ns.length<1) return false;
+    if(mode==='strict' && ns.length!==3) return false;
+    for(let i=0;i<ns.length;i++) for(let j=i+1;j<ns.length;j++) if(ns[j]-ns[i] < minGap) return false;
+  }
+  return dbl===1&&tot===17;
+}
+  
 function placements(D,w){
   const out=[];
   if(D.pair===w) out.push({kind:'pair',idx:-1});
@@ -441,8 +456,8 @@ const INSTANT1=[
 {id:'zhuifan',name:'追番子(付其餘三家)',amt:5,mode:'payall'},{id:'zhuikai',name:'追開章(付其餘三家)',amt:10,mode:'payall'}
 ];
 const FLAGS1=[['ting','叮'],['qiangkong','搶槓'],['huashang','花上自摸'],['kongshang','槓上自摸'],['haidi','海底撈月'],['tianhu','天胡'],['dihu','地胡'],['renhu','人胡'],['tianting','天叮'],['shuangxiang','雙響'],['sanxiang','三響']];
-const API1=makeEngine({id:'tw1',RAW:RAW1,MANUAL:MAN1,SUP:SUP1,INSTANT:INSTANT1,FLAGS:FLAGS1,ziyiseKillAn:true});
-
+const API1=makeEngine({id:'tw1',RAW:RAW1,MANUAL:MAN1,SUP:SUP1,INSTANT:INSTANT1,FLAGS:FLAGS1,ziyiseKillAn:true,autoSpecial:true});
+  
 /* ===== 預設 #3:台牌百搭番數表 ===== */
 const RAW3=[
 ['ting','聽牌',5],['menting','門清聽牌',15],['jishi','即食',5],['menqing','門清',5],
