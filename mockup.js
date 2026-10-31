@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 if(!window.MJ){const a=document.getElementById('app');if(a)a.textContent='計番引擎未能載入，請確認 engine.js 已上傳。';return;}
-const APP_VERSION='2.0.8';
+const APP_VERSION='2.0.10';
 const DEV_IG='kevinli999';
 let M=window.MJ;
 const KEY='mj_v2_full_merge_1';
@@ -228,6 +228,7 @@ function isApple(){
 function isStandalone(){
   try{ return navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }catch(e){ return false; }
 }
+if(isStandalone())document.documentElement.classList.add('ios-standalone');
 function isSafariApple(){ try{ const ua=navigator.userAgent||''; return !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); }catch(e){ return true; } }
 function a2hsSteps(){
   return '<ol class="steps-list"><li>'+(isSafariApple()?'請保持在 <b>Safari</b> 開啟本頁。':'先在分享選單選擇「在 Safari 中打開」，再開啟本頁。')+'</li><li>點 Safari 工具列的<b>分享按鈕</b>（方框向上箭頭 ⬆︎；工具列可能在畫面底部或頂部）。</li><li>在分享選單向下滑，點<b>「加入主畫面」</b>；若沒看到，向下捲動選單或點「編輯動作」尋找。</li><li>確認名稱後點右上角<b>「加入」</b>，再從 iPhone 主畫面圖示開啟。</li></ol><div class="hint">主畫面 App 與 Safari 的資料彼此獨立。若 Safari 已有牌局紀錄，請先到「設定 → 複製備份」，再於主畫面 App 用「貼上匯入」還原。</div>';
@@ -402,7 +403,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.20';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.22';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
