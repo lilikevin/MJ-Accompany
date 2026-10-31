@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 if(!window.MJ){const a=document.getElementById('app');if(a)a.textContent='計番引擎未能載入，請確認 engine.js 已上傳。';return;}
-const APP_VERSION='2.0.5';
+const APP_VERSION='2.0.6';
 const DEV_IG='kevinli999';
 let M=window.MJ;
 const KEY='mj_v2_full_merge_1';
@@ -402,7 +402,7 @@ function injectCss(){
   try{
     if(document.getElementById('mj-static')) return;
     const a=document.createElement('style'); a.id='mj-static'; a.textContent=STATIC_CSS; document.head.appendChild(a);
-    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.17';document.head.appendChild(c);
+    const b=document.createElement('style'); b.id='mj-dyn'; b.textContent=DYN_CSS; document.head.appendChild(b);const c=document.createElement('link');c.rel='stylesheet';c.href='mockup.css?v=2.0.0-test.18';document.head.appendChild(c);
   }catch(e){}
 }
 function applyTheme(){
@@ -3108,10 +3108,8 @@ document.addEventListener('click',e=>{
   if(Date.now()-lastTouchAct<700) return;
   const el=e.target.closest('[data-act]'); if(el) act(el.dataset.act,el.dataset);
 });
-function fitAppViewport(){const app=document.getElementById('app'),vv=window.visualViewport;if(!app)return;app.style.setProperty('--app-top',(vv?.offsetTop||0)+'px');app.style.setProperty('--app-height',(vv?.height||window.innerHeight)+'px');}
-fitAppViewport();
-window.addEventListener('resize',()=>{fitAppViewport();fitEditor();});
-if(window.visualViewport){window.visualViewport.addEventListener('resize',()=>{fitAppViewport();fitEditor();});window.visualViewport.addEventListener('scroll',()=>{fitAppViewport();fitEditor();});}
+window.addEventListener('resize',fitEditor);
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fitEditor);window.visualViewport.addEventListener('scroll',fitEditor);}
 document.addEventListener('focusin',e=>{if(isNameField(e.target))nameFieldFocus(e.target);if(e.target.matches?.('.u-table-screen input'))document.body.classList.add('table-keyboard-open');});
 document.addEventListener('focusout',e=>{if(isNameField(e.target))settleNameField(e.target);if(e.target.matches?.('.u-table-screen input'))setTimeout(()=>{if(!document.activeElement?.matches?.('.u-table-screen input'))document.body.classList.remove('table-keyboard-open');},0);});
 document.addEventListener('keydown',e=>{

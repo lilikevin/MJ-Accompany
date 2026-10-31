@@ -20,7 +20,7 @@
 .u-payment-prompt span{font-size:13px;line-height:1.35}
 .u-payment-prompt button{flex:none;min-height:42px;padding:6px 10px}
 @media(max-height:700px){.u-main-nav{padding:3px 8px}.u-main-nav button{min-height:38px}.u-payment-prompt{padding:6px}.u-payment-prompt button{min-height:38px}}
-#app{position:fixed;top:var(--app-top,0px);left:0;right:0;height:var(--app-height,100dvh);overflow:hidden}
+#app{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden}
 .u-shell{height:100%}
 .u-rule:not(:has(.grid2)){display:grid;grid-template-columns:minmax(0,1fr) minmax(64px,76px);align-items:center;gap:4px;padding:5px 7px}
 .u-rule:not(:has(.grid2))>span{min-height:0!important;line-height:1.25}
